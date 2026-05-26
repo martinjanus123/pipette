@@ -1,0 +1,27 @@
+Pipettentool
+
+Aufbauend auf Excel-Liste:
+
+Allgemeine Anzeige im Tool (Hauptseite):
+
+a) Suche (nach Seriennr., Inventar-Nr. o.a.?) -> Anzeige von: Standort (Laborraum), Verwendung (FuE...), Platz/Anwendung, und wann nächster Kalibriertermin , Historie der Pipette (z.B. wann letzte Kalibrierung, ob/wann gesperrt, Änderung Standorte/Anwendung usw., zu Sartorius eingeschickt ([letztes?] Datum) etc.)
+
+b) Anzeige von demnächst zu kalibrierenden Pipetten (mit automatischer Email-Benachrichtigung oder Kalenderbenachrichtigung?) - z.B. in 14 Tagen fällige Pipetten mit Kalibrierdatum; Pipetten die über dem Kalibrierdatum liegen (Ampelsystem: grün, gelb, rot); sowie: zu Sartorius einschicken (alle mit Nennvolumen: 25 µL und kleiner) 
+
+c) Eingabe-Button ("Neue Pipette eintragen")
+
+
+   -> Eingabe-Seite wird aufgerufen, einzutragen ist:
+      - Pipette (Firma und Bezeichnung)
+      - Inventar-Nr. (L00...)
+      - Serien-Nr.
+      - Anzahl Kanäle
+      - Verwendung: Dropdown-Menü mit "FuE" und "Prüfungen"
+      - Typ: Dropdown-Menü mit "Luftpolsterpipette" und "Direktverdränger"
+      - Nennvolumen (___ µL)
+      - Kalibrierintervall: Dropdown-Menü mit "6" und "12" Monate
+      - Platz/Anwendung: Dropdown-Menü mit "Sterilwerkbank", "Assays", "Qubit/Bioanalyzer", "PCR-Platz", "Extraktion cf-DNA", "Prüfungen", "Countess", "ddPCR"
+               (EVENTUELL MÖGLICH: Neueintrag, der dann ab da immer im Dropdown-Menü mit angezeigt wird?)
+      - Raum: Dropdown Menü "Labor 1a", "Labor 1b", "Labor 3"
+
+      --> Automatische Auflistung der neuen Pipette in der Excel-Datei mit automatischer Ergänzung von Registriernummer (laufende Nr.), Bezeichnung, Kalibrierstufen und Fehler
