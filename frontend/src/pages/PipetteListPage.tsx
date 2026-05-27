@@ -41,7 +41,7 @@ export function PipetteListPage(): JSX.Element {
       <p className="eyebrow">Uebersicht</p>
       <h2>Pipettenliste</h2>
       <label className="field">
-        Suche
+        <span>Suche</span>
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}

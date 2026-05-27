@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
@@ -10,6 +11,10 @@ from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Us
 from app.schemas.pipette import PipetteCreate, PipetteDetail, PipetteListItem
 
 router = APIRouter(prefix="/pipettes")
+DbSession = Annotated[Session, Depends(get_db)]
+SearchQuery = Annotated[str | None, Query()]
+LimitQuery = Annotated[int, Query(ge=1, le=200)]
+OffsetQuery = Annotated[int, Query(ge=0)]
 
 
 def _description(manufacturer: str, model_name: str, nominal_volume_ul: float) -> str:
@@ -42,18 +47,18 @@ def _as_list_item(pipette: Pipette) -> PipetteListItem:
     )
 
 
-def _ensure_reference_exists(db: Session, model: type, item_id: int, label: str) -> None:
+def _ensure_reference_exists(db: Session, model: type[Any], item_id: int, label: str) -> None:
     exists = db.scalar(select(model.id).where(model.id == item_id))
     if exists is None:
         raise HTTPException(status_code=422, detail=f"Unknown {label}: {item_id}")
 
 
-@router.get("", response_model=list[PipetteListItem])
+@router.get("")
 def list_pipettes(
-    q: str | None = Query(default=None),
-    limit: int = Query(default=50, ge=1, le=200),
-    offset: int = Query(default=0, ge=0),
-    db: Session = Depends(get_db),
+    db: DbSession,
+    q: SearchQuery = None,
+    limit: LimitQuery = 50,
+    offset: OffsetQuery = 0,
 ) -> list[PipetteListItem]:
     statement = (
         select(Pipette)
@@ -82,8 +87,15 @@ def list_pipettes(
     return [_as_list_item(pipette) for pipette in db.scalars(statement).all()]
 
 
-@router.post("", response_model=PipetteDetail, status_code=201)
-def create_pipette(payload: PipetteCreate, db: Session = Depends(get_db)) -> PipetteDetail:
+@router.post(
+    "",
+    status_code=201,
+    responses={
+        409: {"description": "Pipette already exists"},
+        422: {"description": "Unknown reference data"},
+    },
+)
+def create_pipette(payload: PipetteCreate, db: DbSession) -> PipetteDetail:
     _ensure_reference_exists(db, Room, payload.room_id, "room_id")
     _ensure_reference_exists(db, Application, payload.application_id, "application_id")
     _ensure_reference_exists(db, Usage, payload.use_id, "use_id")
@@ -132,8 +144,8 @@ def create_pipette(payload: PipetteCreate, db: Session = Depends(get_db)) -> Pip
     return get_pipette(pipette.id, db)
 
 
-@router.get("/{pipette_id}", response_model=PipetteDetail)
-def get_pipette(pipette_id: int, db: Session = Depends(get_db)) -> PipetteDetail:
+@router.get("/{pipette_id}", responses={404: {"description": "Pipette not found"}})
+def get_pipette(pipette_id: int, db: DbSession) -> PipetteDetail:
     pipette = db.scalar(
         select(Pipette)
         .where(Pipette.id == pipette_id)

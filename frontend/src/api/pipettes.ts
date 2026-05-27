@@ -2,8 +2,7 @@ import { apiRequest } from "./client";
 import type { PipetteCreatePayload, PipetteListItem } from "./types";
 
 export async function getPipettes(query?: string): Promise<PipetteListItem[]> {
-  const search = query ? `?q=${encodeURIComponent(query)}` : "";
-  return apiRequest<PipetteListItem[]>(`/api/pipettes${search}`);
+  return apiRequest<PipetteListItem[]>("/api/pipettes", undefined, { q: query });
 }
 
 export async function getPipette(id: string): Promise<PipetteListItem> {

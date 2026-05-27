@@ -90,6 +90,22 @@ if (-not (Test-Path -LiteralPath $resultsPath)) {
     New-Item -ItemType Directory -Path $resultsPath | Out-Null
 }
 
+if ([string]::IsNullOrWhiteSpace($env:POSTGRES_DB)) {
+    $env:POSTGRES_DB = "pipettentool"
+}
+
+if ([string]::IsNullOrWhiteSpace($env:POSTGRES_USER)) {
+    $env:POSTGRES_USER = "pipettentool"
+}
+
+if ([string]::IsNullOrWhiteSpace($env:POSTGRES_PASSWORD)) {
+    $env:POSTGRES_PASSWORD = [Guid]::NewGuid().ToString("N")
+}
+
+if ([string]::IsNullOrWhiteSpace($env:DATABASE_URL)) {
+    $env:DATABASE_URL = "postgresql+psycopg://$($env:POSTGRES_USER):$($env:POSTGRES_PASSWORD)@db:5432/$($env:POSTGRES_DB)"
+}
+
 $steps = @()
 
 $steps += Invoke-CapturedCommand `

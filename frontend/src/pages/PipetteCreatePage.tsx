@@ -84,7 +84,7 @@ export function PipetteCreatePage(): JSX.Element {
       {dropdowns && (
         <form className="form-grid" onSubmit={handleSubmit}>
           <label className="field">
-            Hersteller
+            <span>Hersteller</span>
             <input
               required
               value={form.manufacturer}
@@ -92,7 +92,7 @@ export function PipetteCreatePage(): JSX.Element {
             />
           </label>
           <label className="field">
-            Modell
+            <span>Modell</span>
             <input
               required
               value={form.model_name}
@@ -100,7 +100,7 @@ export function PipetteCreatePage(): JSX.Element {
             />
           </label>
           <label className="field">
-            Inventar-Nr.
+            <span>Inventar-Nr.</span>
             <input
               required
               value={form.inventory_number}
@@ -108,7 +108,7 @@ export function PipetteCreatePage(): JSX.Element {
             />
           </label>
           <label className="field">
-            Serien-Nr.
+            <span>Serien-Nr.</span>
             <input
               required
               value={form.serial_number}
@@ -116,7 +116,7 @@ export function PipetteCreatePage(): JSX.Element {
             />
           </label>
           <label className="field">
-            Anzahl Kanaele
+            <span>Anzahl Kanaele</span>
             <input
               required
               min="1"
@@ -126,7 +126,7 @@ export function PipetteCreatePage(): JSX.Element {
             />
           </label>
           <label className="field">
-            Nennvolumen in µL
+            <span>Nennvolumen in µL</span>
             <input
               required
               min="0.01"
@@ -137,7 +137,7 @@ export function PipetteCreatePage(): JSX.Element {
             />
           </label>
           <label className="field">
-            Kalibrierintervall
+            <span>Kalibrierintervall</span>
             <select
               value={form.calibration_interval_months}
               onChange={(event) => updateField("calibration_interval_months", event.target.value)}
@@ -147,7 +147,7 @@ export function PipetteCreatePage(): JSX.Element {
             </select>
           </label>
           <label className="field">
-            Verwendung
+            <span>Verwendung</span>
             <select value={form.use_id} onChange={(event) => updateField("use_id", event.target.value)}>
               {dropdowns.uses.map((item) => (
                 <option key={item.id} value={item.id}>
@@ -157,7 +157,7 @@ export function PipetteCreatePage(): JSX.Element {
             </select>
           </label>
           <label className="field">
-            Typ
+            <span>Typ</span>
             <select
               value={form.pipette_type_id}
               onChange={(event) => updateField("pipette_type_id", event.target.value)}
@@ -170,7 +170,7 @@ export function PipetteCreatePage(): JSX.Element {
             </select>
           </label>
           <label className="field">
-            Anwendung
+            <span>Anwendung</span>
             <select
               value={form.application_id}
               onChange={(event) => updateField("application_id", event.target.value)}
@@ -183,7 +183,7 @@ export function PipetteCreatePage(): JSX.Element {
             </select>
           </label>
           <label className="field">
-            Raum
+            <span>Raum</span>
             <select value={form.room_id} onChange={(event) => updateField("room_id", event.target.value)}>
               {dropdowns.rooms.map((item) => (
                 <option key={item.id} value={item.id}>
