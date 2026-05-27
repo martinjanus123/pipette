@@ -14,3 +14,19 @@ export async function getHealthStatus(): Promise<string> {
   const body = (await response.json()) as { status?: string };
   return body.status ?? "unknown";
 }
+
+export async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(options?.headers ?? {})
+    },
+    ...options
+  });
+
+  if (!response.ok) {
+    throw new Error(`API request failed with status ${response.status}`);
+  }
+
+  return (await response.json()) as T;
+}

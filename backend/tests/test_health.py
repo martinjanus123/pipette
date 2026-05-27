@@ -4,7 +4,7 @@ from app.main import create_app
 
 
 def test_health_endpoint_returns_ok() -> None:
-    client = TestClient(create_app())
+    client = TestClient(create_app(initialize_database=False))
 
     response = client.get("/api/health")
 
@@ -13,7 +13,7 @@ def test_health_endpoint_returns_ok() -> None:
 
 
 def test_version_endpoint_returns_version() -> None:
-    client = TestClient(create_app())
+    client = TestClient(create_app(initialize_database=False))
 
     response = client.get("/api/version")
 

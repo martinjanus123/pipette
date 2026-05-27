@@ -3,6 +3,7 @@
 .ruff_cache/
 .coverage
 coverage.xml
+*.db
 htmlcov/
 node_modules/
 dist/

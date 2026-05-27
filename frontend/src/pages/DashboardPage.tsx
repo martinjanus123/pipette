@@ -3,7 +3,11 @@ export function DashboardPage(): JSX.Element {
     <section className="page">
       <p className="eyebrow">Start</p>
       <h2>Dashboard</h2>
-      <p>Platzhalter fuer Faelligkeiten, Ampelstatus und Sartorius-Hinweise.</p>
+      <p>Baseline-Dashboard fuer die spaeteren Coding-Aufgaben.</p>
+      <p>
+        Datenbank, Stammdaten, Pipettenliste, Detailansicht und Neuanlage sind vorbereitet. Ampelstatus
+        und Sartorius-Hinweise bleiben bewusst offen fuer die Experiment-Aufgaben.
+      </p>
     </section>
   );
 }

@@ -1,6 +1,6 @@
 # Experiment 2 Repository
 
-Dieses Repository ist der gemeinsame Startzustand fuer das zweite Experiment der Bachelorarbeit. Alle Agenten-Runs sollen vom Branch `baseline` ausgehen.
+Dieses Repository ist der gemeinsame Startzustand fuer das zweite Experiment der Bachelorarbeit. Alle Agenten-Runs sollen vom Branch `baseline` ausgehen. Der Baseline-Stand enthaelt bewusst bereits die Infrastruktur und die Basisfunktionen, damit Agenten nur noch kleine Coding-Aufgaben bearbeiten muessen.
 
 ## Struktur
 
@@ -14,6 +14,19 @@ Dieses Repository ist der gemeinsame Startzustand fuer das zweite Experiment der
 ├── docker-compose.yml
 └── sonar-project.properties
 ```
+
+## Was im Baseline-Stand bereits fertig ist
+
+- FastAPI-Backend mit Healthcheck und OpenAPI.
+- React/Vite-Frontend mit Routing.
+- PostgreSQL ueber Docker Compose.
+- SQLAlchemy-Datenbankanbindung.
+- Alembic-Initialmigration.
+- Modelle fuer Pipetten, Raeume, Anwendungen, Verwendungen, Pipettentypen, Kalibrierungen und Historie.
+- Seed-Daten fuer alle Dropdown-Stammdaten.
+- Basis-API fuer Stammdaten und Pipetten.
+- Pipettenliste, Detailansicht und einfache Neuanlage im Frontend.
+- Gemeinsame Evaluationspipeline fuer Backend- und Frontend-Tests.
 
 ## Baseline starten
 

@@ -1,6 +1,7 @@
 # Aufgabe fuer den Coding-Agenten
 
-Baue aus diesem Infra-Skeleton ein Pipettentool als Webanwendung.
+Implementiere genau die Coding-Anforderung, die dir fuer diesen Experiment-Run gegeben wird.
+Baue keine neue Infrastruktur auf.
 
 ## Startzustand
 
@@ -9,6 +10,12 @@ Das Repository enthaelt bereits:
 - FastAPI-Backend mit Healthcheck.
 - React/Vite-Frontend mit Routing und Healthcheck-Anzeige.
 - PostgreSQL via Docker Compose.
+- SQLAlchemy-Datenbankanbindung.
+- Alembic-Initialmigration.
+- Datenbankmodelle fuer Pipetten, Stammdaten, Kalibrierungen und Historie.
+- Seed-Daten fuer Raeume, Anwendungen, Verwendungen und Pipettentypen.
+- Basis-API fuer Stammdaten und Pipetten.
+- Frontend-Basis fuer Pipettenliste, Detailseite und Neuanlage.
 - Test-Grundgeruest fuer Backend und Frontend.
 - SonarQube-Konfiguration fuer die spaetere Codequalitaetsbewertung.
 
@@ -16,36 +23,15 @@ Das Repository enthaelt bereits:
 
 Die Anwendung ersetzt eine bestehende Excel-basierte Pipettenverwaltung. Excel ist nur Migrationsquelle und optional spaeter Exportformat. Die Datenbank ist das fuehrende System.
 
-## Muss-Funktionen fuer den MVP
+## Offene Coding-Anforderungen fuer Experimente
 
-- Pipettenliste mit Suche nach Seriennummer, Inventar-Nr. und weiteren relevanten Feldern.
-- Anzeige je Pipette von Standort, Verwendung, Platz/Anwendung, naechstem Kalibriertermin und Historie.
-- Dashboard fuer bald faellige und ueberfaellige Kalibrierungen.
-- Ampelstatus:
-  - `green`: nicht bald faellig.
-  - `yellow`: innerhalb von 14 Tagen faellig.
-  - `red`: ueberfaellig.
-  - `gray`: gesperrt oder ausser Betrieb.
-- Neue Pipette eintragen mit:
-  - Firma und Bezeichnung.
-  - Inventar-Nr.
-  - Serien-Nr.
-  - Anzahl Kanaele.
-  - Verwendung: `FuE`, `Pruefungen`.
-  - Typ: `Luftpolsterpipette`, `Direktverdränger`.
-  - Nennvolumen in `µL`.
-  - Kalibrierintervall: `6` oder `12` Monate.
-  - Platz/Anwendung: `Sterilwerkbank`, `Assays`, `Qubit/Bioanalyzer`, `PCR-Platz`, `Extraktion cf-DNA`, `Pruefungen`, `Countess`, `ddPCR`.
-  - Raum: `Labor 1a`, `Labor 1b`, `Labor 3`.
-- Neue Anwendungen koennen dauerhaft angelegt werden.
-- Backend ergaenzt automatisch:
-  - Register-Nr.
-  - Bezeichnung.
-  - Kalibrierstufen.
-  - Fehlergrenzen, sofern aus Konfiguration oder Excel ableitbar.
-- Sartorius-Regel: Pipetten mit Nennvolumen `<= 25 µL` werden markiert.
-- Historie fuer Anlage, Aenderung, Kalibrierung, Sperrung, Entsperrung, Standortwechsel, Anwendungswechsel und Sartorius-Einsendung.
-- Excel-Import mit Validierung und Importprotokoll.
+Die Agenten sollen nur kleine, klar abgegrenzte Anforderungen bearbeiten. Beispiele:
+
+- Sartorius-Hinweis fuer Pipetten mit Nennvolumen `<= 25 µL`.
+- Kalibrier-Ampel fuer `green`, `yellow`, `red`, `gray`.
+- Neue Anwendung im Formular anlegen und direkt auswaehlen.
+
+Die genaue Aufgabe fuer den Run steht im Prompt des jeweiligen Experiments.
 
 ## Architekturregeln
 
@@ -55,6 +41,8 @@ Die Anwendung ersetzt eine bestehende Excel-basierte Pipettenverwaltung. Excel i
 - Keine erfundenen Fehlergrenzen.
 - Keine Excel-Datei als Primaerspeicher.
 - Tests fuer zentrale Fachregeln schreiben.
+- Bestehende Baseline-Funktionen nicht neu aufbauen.
+- Keine unnoetigen Refactorings ausserhalb der gegebenen Coding-Anforderung.
 
 ## Bewertung
 
