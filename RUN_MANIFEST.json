@@ -1,0 +1,9 @@
+﻿{
+    "branch":  "run/single-agent-tools/codex-02",
+    "architecture":  "single-agent-tools",
+    "agent_name":  "codex",
+    "run_number":  2,
+    "baseline_branch":  "baseline",
+    "baseline_commit":  "2e195bf740e279955b472376b140b568191b8a6c",
+    "created_at":  "2026-05-27T10:13:04.6554518Z"
+}
