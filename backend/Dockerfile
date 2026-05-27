@@ -5,10 +5,11 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-COPY pyproject.toml ./
+COPY pyproject.toml alembic.ini ./
 RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -e ".[dev]"
 
 COPY app ./app
+COPY alembic ./alembic
 
 EXPOSE 8000
 
