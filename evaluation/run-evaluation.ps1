@@ -119,7 +119,7 @@ $steps += Invoke-CapturedCommand `
     -Name "frontend-test" `
     -WorkingDirectory $runFullPath `
     -Command "docker" `
-    -Arguments @("compose", "run", "--rm", "--build", "--no-deps", "frontend", "npm", "run", "test:coverage", "--", "--coverage.reportsDirectory=/tmp/frontend-coverage") `
+    -Arguments @("compose", "run", "--rm", "--build", "--no-deps", "frontend", "npm", "run", "test:coverage", "--", "--config", "/app/.vite-config/vite.config.mjs", "--coverage.reportsDirectory=/tmp/frontend-coverage") `
     -OutputPath (Join-Path $resultsPath "frontend-test.txt")
 
 if ($RunSonar) {

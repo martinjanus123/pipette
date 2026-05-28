@@ -3,12 +3,13 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [react()],
+  cacheDir: process.env.VITE_CACHE_DIR ?? "node_modules/.vite",
   test: {
     environment: "jsdom",
     globals: true,
     setupFiles: "./src/test/setup.ts",
     coverage: {
-      reporter: ["text", "lcov"]
-    }
-  }
+      reporter: ["text", "lcov"],
+    },
+  },
 });
