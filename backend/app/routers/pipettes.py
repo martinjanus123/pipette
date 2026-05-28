@@ -144,7 +144,15 @@ def create_pipette(payload: PipetteCreate, db: DbSession) -> PipetteDetail:
     return get_pipette(pipette.id, db)
 
 
-@router.get("/{pipette_id}", responses={404: {"description": "Pipette not found"}})
+@router.get(
+    "/{pipette_id}",
+    responses={
+        404: {
+            "description": "Pipette not found",
+            "content": {"application/json": {"example": {"detail": "Pipette not found"}}},
+        },
+    },
+)
 def get_pipette(pipette_id: int, db: DbSession) -> PipetteDetail:
     pipette = db.scalar(
         select(Pipette)
