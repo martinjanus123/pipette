@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_db
 from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage
@@ -51,6 +52,10 @@ def _ensure_reference_exists(db: Session, model: type[Any], item_id: int, label:
     exists = db.scalar(select(model.id).where(model.id == item_id))
     if exists is None:
         raise HTTPException(status_code=422, detail=f"Unknown {label}: {item_id}")
+
+
+def _raise_pipette_not_found() -> None:
+    raise StarletteHTTPException(status_code=404, detail="Pipette not found")
 
 
 @router.get("")
@@ -165,5 +170,5 @@ def get_pipette(pipette_id: int, db: DbSession) -> PipetteDetail:
         )
     )
     if pipette is None:
-        raise HTTPException(status_code=404, detail="Pipette not found")
+        _raise_pipette_not_found()
     return _as_list_item(pipette)
