@@ -112,7 +112,7 @@ $steps += Invoke-CapturedCommand `
     -Name "backend-pytest" `
     -WorkingDirectory $runFullPath `
     -Command "docker" `
-    -Arguments @("compose", "run", "--rm", "--build", "--no-deps", "backend", "python", "-m", "pytest", "--cov=app", "--cov-report=xml") `
+    -Arguments @("compose", "run", "--rm", "--build", "--no-deps", "backend", "python", "-m", "pytest", "--cov=app", "--cov-report=xml:/tmp/backend-coverage.xml") `
     -OutputPath (Join-Path $resultsPath "backend-pytest.txt")
 
 $steps += Invoke-CapturedCommand `
