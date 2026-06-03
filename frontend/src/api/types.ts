@@ -21,6 +21,7 @@ export interface PipetteListItem {
   model_name: string;
   channel_count: number;
   nominal_volume_ul: number;
+  requires_sartorius: boolean;
   calibration_interval_months: number;
   status: string;
   room: string;
