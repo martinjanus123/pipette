@@ -31,6 +31,18 @@ export function PipetteDetailPage(): JSX.Element {
         <dl className="detail-list">
           <dt>Bezeichnung</dt>
           <dd>{pipette.description}</dd>
+          <dt>Hersteller</dt>
+          <dd>{pipette.manufacturer}</dd>
+          <dt>Modell</dt>
+          <dd>{pipette.model_name}</dd>
+          <dt>Nennvolumen (µL)</dt>
+          <dd>{pipette.nominal_volume_ul}</dd>
+          <dt>Anzahl Kanaele</dt>
+          <dd>{pipette.channel_count}</dd>
+          <dt>Kalibrierintervall (Monate)</dt>
+          <dd>{pipette.calibration_interval_months}</dd>
+          <dt>Pipettentyp</dt>
+          <dd>{pipette.pipette_type}</dd>
           <dt>Inventar-Nr.</dt>
           <dd>{pipette.inventory_number}</dd>
           <dt>Serien-Nr.</dt>
