@@ -36,6 +36,10 @@ export function PipetteListPage(): JSX.Element {
     };
   }, [query]);
 
+  const handleReset = () => {
+    setQuery("");
+  };
+
   return (
     <section className="page">
       <p className="eyebrow">Uebersicht</p>
@@ -47,9 +51,19 @@ export function PipetteListPage(): JSX.Element {
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Seriennummer, Inventar-Nr. oder Bezeichnung"
         />
+        {/* Reset‑Button nur anzeigen, wenn ein Suchbegriff eingegeben ist */}
+        {query && (
+          <button type="button" onClick={handleReset} className="reset-button">
+            Reset
+          </button>
+        )}
       </label>
       {isLoading && <p>Pipetten werden geladen.</p>}
       {error && <p className="error">{error}</p>}
+      {/* Ergebnis‑Anzahl anzeigen, sobald die Daten geladen sind */}
+      {!isLoading && !error && (
+        <p>{pipettes.length} Pipette{pipettes.length !== 1 ? "n" : ""} gefunden.</p>
+      )}
       {!isLoading && !error && pipettes.length === 0 && <p>Keine Pipetten vorhanden.</p>}
       {pipettes.length > 0 && (
         <table>
