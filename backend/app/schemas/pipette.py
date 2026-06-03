@@ -27,7 +27,6 @@ class PipetteListItem(BaseModel):
     model_name: str
     channel_count: int
     nominal_volume_ul: float
-    requires_sartorius: bool
     calibration_interval_months: int
     status: str
     room: str
