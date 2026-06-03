@@ -42,3 +42,17 @@ export interface PipetteCreatePayload {
   application_id: number;
   room_id: number;
 }
+
+export interface PipetteEventDetail {
+  id: number;
+  event_type: string;
+  event_date: string; // ISO string
+  old_value?: string | null;
+  new_value?: string | null;
+  notes?: string | null;
+  created_by?: string | null;
+}
+
+export interface PipetteDetail extends PipetteListItem {
+  events: PipetteEventDetail[];
+}
