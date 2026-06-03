@@ -16,9 +16,6 @@ DbSession = Annotated[Session, Depends(get_db)]
 SearchQuery = Annotated[str | None, Query()]
 LimitQuery = Annotated[int, Query(ge=1, le=200)]
 OffsetQuery = Annotated[int, Query(ge=0)]
-# New optional filters – default None so they are optional
-RoomIdQuery = Annotated[int | None, Query(None, alias="room_id")]
-ApplicationIdQuery = Annotated[int | None, Query(None, alias="application_id")]
 
 
 def _description(manufacturer: str, model_name: str, nominal_volume_ul: float) -> str:
@@ -67,8 +64,6 @@ def list_pipettes(
     q: SearchQuery = None,
     limit: LimitQuery = 50,
     offset: OffsetQuery = 0,
-    room_id: RoomIdQuery = None,
-    application_id: ApplicationIdQuery = None,
 ) -> list[PipetteListItem]:
     statement = (
         select(Pipette)
@@ -93,10 +88,7 @@ def list_pipettes(
                 Pipette.model_name.ilike(like),
             )
         )
-    if room_id is not None:
-        statement = statement.where(Pipette.room_id == room_id)
-    if application_id is not None:
-        statement = statement.where(Pipette.application_id == application_id)
+
     return [_as_list_item(pipette) for pipette in db.scalars(statement).all()]
 
 
@@ -146,11 +138,13 @@ def create_pipette(payload: PipetteCreate, db: DbSession) -> PipetteDetail:
             created_by="system",
         )
     )
+
     try:
         db.commit()
     except IntegrityError as exc:
         db.rollback()
         raise HTTPException(status_code=409, detail="Pipette already exists") from exc
+
     db.refresh(pipette)
     return get_pipette(pipette.id, db)
 
