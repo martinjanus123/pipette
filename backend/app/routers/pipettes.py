@@ -39,6 +39,7 @@ def _as_list_item(pipette: Pipette) -> PipetteListItem:
         model_name=pipette.model_name,
         channel_count=pipette.channel_count,
         nominal_volume_ul=pipette.nominal_volume_ul,
+        requires_sartorius=getattr(pipette, "requires_sartorius", pipette.nominal_volume_ul <= 25),
         calibration_interval_months=pipette.calibration_interval_months,
         status=pipette.status,
         room=pipette.room.name,
