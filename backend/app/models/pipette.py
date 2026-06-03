@@ -38,13 +38,3 @@ class Pipette(TimestampMixin, Base):
         if not self.calibrations:
             return None
         return max(calibration.calibration_date for calibration in self.calibrations)
-+
-+    @property
-+    def requires_sartorius(self) -> bool:
-+        """Return True if the pipette's nominal volume is <= 25 µL.
-+
-+        According to the specification, pipettes with a nominal volume of 25 µL
-+        or less need a Sartorius calibration device. The frontend will display
-+        a hint based on this flag received from the API.
-+        """
-+        return self.nominal_volume_ul <= 25
