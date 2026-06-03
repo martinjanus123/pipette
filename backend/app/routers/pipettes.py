@@ -62,8 +62,6 @@ def _raise_pipette_not_found() -> None:
 def list_pipettes(
     db: DbSession,
     q: SearchQuery = None,
-    room_id: Annotated[int | None, Query()] = None,
-    application_id: Annotated[int | None, Query()] = None,
     limit: LimitQuery = 50,
     offset: OffsetQuery = 0,
 ) -> list[PipetteListItem]:
@@ -90,10 +88,6 @@ def list_pipettes(
                 Pipette.model_name.ilike(like),
             )
         )
-    if room_id is not None:
-        statement = statement.where(Pipette.room_id == room_id)
-    if application_id is not None:
-        statement = statement.where(Pipette.application_id == application_id)
 
     return [_as_list_item(pipette) for pipette in db.scalars(statement).all()]
 
