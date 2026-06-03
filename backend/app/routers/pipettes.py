@@ -106,6 +106,20 @@ def create_pipette(payload: PipetteCreate, db: DbSession) -> PipetteDetail:
     _ensure_reference_exists(db, Usage, payload.use_id, "use_id")
     _ensure_reference_exists(db, PipetteType, payload.pipette_type_id, "pipette_type_id")
 
+    # Check for duplicate inventory_number
+    existing_inventory = db.scalar(
+        select(Pipette.id).where(Pipette.inventory_number == payload.inventory_number)
+    )
+    if existing_inventory is not None:
+        raise HTTPException(status_code=409, detail="inventory_number already exists")
+
+    # Check for duplicate serial_number
+    existing_serial = db.scalar(
+        select(Pipette.id).where(Pipette.serial_number == payload.serial_number)
+    )
+    if existing_serial is not None:
+        raise HTTPException(status_code=409, detail="serial_number already exists")
+
     pipette = Pipette(
         register_number=_next_register_number(db),
         inventory_number=payload.inventory_number,
@@ -143,6 +157,7 @@ def create_pipette(payload: PipetteCreate, db: DbSession) -> PipetteDetail:
         db.commit()
     except IntegrityError as exc:
         db.rollback()
+        # Fallback – if a race condition caused a duplicate, translate generically
         raise HTTPException(status_code=409, detail="Pipette already exists") from exc
 
     db.refresh(pipette)
