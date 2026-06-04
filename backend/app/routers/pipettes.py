@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -26,23 +26,6 @@ def _description(manufacturer: str, model_name: str, nominal_volume_ul: float) -
 def _next_register_number(db: Session) -> int:
     current_max = db.scalar(select(func.max(Pipette.register_number)))
     return (current_max or 0) + 1
-+
-+
-+def _calibration_status(pipette: Pipette) -> str:
-    """Determine calibration status based on the most recent calibration.
-    Returns one of: 'gray', 'red', 'yellow', 'green'.
-    """
-    if not pipette.calibrations:
-        return "gray"
-    # find the calibration with the latest calibration_date
-    latest = max(pipette.calibrations, key=lambda c: c.calibration_date)
-    next_due = latest.next_due_date
-    today = datetime.now(timezone.utc).date()
-    if next_due < today:
-        return "red"
-    if next_due <= today + timedelta(days=30):
-        return "yellow"
-    return "green"
 
 
 def _as_list_item(pipette: Pipette) -> PipetteListItem:
@@ -62,7 +45,6 @@ def _as_list_item(pipette: Pipette) -> PipetteListItem:
         use=pipette.usage.name,
         application=pipette.application.name,
         pipette_type=pipette.pipette_type.name,
-        calibration_status=_calibration_status(pipette),
     )
 
 
@@ -90,7 +72,6 @@ def list_pipettes(
             joinedload(Pipette.usage),
             joinedload(Pipette.application),
             joinedload(Pipette.pipette_type),
-            joinedload(Pipette.calibrations),
         )
         .order_by(Pipette.register_number)
         .limit(limit)
@@ -186,7 +167,6 @@ def get_pipette(pipette_id: int, db: DbSession) -> PipetteDetail:
             joinedload(Pipette.usage),
             joinedload(Pipette.application),
             joinedload(Pipette.pipette_type),
-            joinedload(Pipette.calibrations),
         )
     )
     if pipette is None:
