@@ -29,20 +29,6 @@ export interface PipetteListItem {
   pipette_type: string;
 }
 
-export interface CalibrationDetail {
-  id: number;
-  calibration_date: string; // ISO date
-  next_due_date: string;
-  result?: string;
-  performed_by?: string;
-  certificate_reference?: string;
-  notes?: string;
-}
-
-export interface PipetteDetail extends PipetteListItem {
-  calibrations: CalibrationDetail[];
-}
-
 export interface PipetteCreatePayload {
   manufacturer: string;
   model_name: string;
@@ -55,13 +41,4 @@ export interface PipetteCreatePayload {
   calibration_interval_months: 6 | 12;
   application_id: number;
   room_id: number;
-}
-
-export interface CalibrationCreatePayload {
-  calibration_date: string; // YYYY-MM-DD
-  next_due_date: string;
-  result?: string;
-  performed_by?: string;
-  certificate_reference?: string;
-  notes?: string;
 }

@@ -1,8 +1,6 @@
-from typing import Literal, List
+from typing import Literal
 
 from pydantic import BaseModel, Field
-
-from .calibration import CalibrationDetail
 
 
 class PipetteCreate(BaseModel):
@@ -36,10 +34,6 @@ class PipetteListItem(BaseModel):
     application: str
     pipette_type: str
 
-    model_config = {"from_attributes": True}
-
 
 class PipetteDetail(PipetteListItem):
-    calibrations: List[CalibrationDetail] = []
-
-    model_config = {"from_attributes": True}
+    pass
