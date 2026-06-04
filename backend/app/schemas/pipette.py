@@ -1,7 +1,6 @@
-from typing import Literal, Optional, List
+from typing import Literal
 
 from pydantic import BaseModel, Field
-from datetime import datetime
 
 
 class PipetteCreate(BaseModel):
@@ -36,21 +35,5 @@ class PipetteListItem(BaseModel):
     pipette_type: str
 
 
-class PipetteEventDetail(BaseModel):
-    id: int
-    event_type: str
-    event_date: datetime
-    old_value: Optional[str] = None
-    new_value: Optional[str] = None
-    notes: Optional[str] = None
-    created_by: Optional[str] = None
-
-
 class PipetteDetail(PipetteListItem):
-    events: List[PipetteEventDetail] = []
-
-
-class PipetteStatusChange(BaseModel):
-    new_status: Literal["active", "maintenance", "retired"]
-    notes: Optional[str] = None
-    created_by: Optional[str] = None
+    pass
