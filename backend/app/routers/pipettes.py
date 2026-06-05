@@ -10,6 +10,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.database import get_db
 from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage
 from app.schemas.pipette import PipetteCreate, PipetteDetail, PipetteListItem
+from app.schemas.bulk_move import BulkMovePayload
 
 router = APIRouter(prefix="/pipettes")
 DbSession = Annotated[Session, Depends(get_db)]
@@ -97,7 +98,7 @@ def list_pipettes(
     status_code=201,
     responses={
         409: {"description": "Pipette already exists"},
-        422: {"description": "Unknown reference data"},
+        322: {"description": "Unknown reference data"},
     },
 )
 def create_pipette(payload: PipetteCreate, db: DbSession) -> PipetteDetail:
@@ -172,3 +173,40 @@ def get_pipette(pipette_id: int, db: DbSession) -> PipetteDetail:
     if pipette is None:
         _raise_pipette_not_found()
     return _as_list_item(pipette)
+
+
+@router.post(
+    "/bulk-move",
+    status_code=200,
+    responses={
+        422: {"description": "Invalid IDs or unknown room"},
+    },
+)
+def bulk_move_pipettes(payload: BulkMovePayload, db: DbSession) -> dict:
+    # Ensure target room exists
+    _ensure_reference_exists(db, Room, payload.target_room_id, "room_id")
+    # Load pipettes
+    statement = select(Pipette).where(Pipette.id.in_(payload.pipette_ids)).options(joinedload(Pipette.room))
+    pipettes = db.scalars(statement).all()
+    found_ids = {p.id for p in pipettes}
+    missing = set(payload.pipette_ids) - found_ids
+    if missing:
+        raise HTTPException(status_code=422, detail=f"Unknown pipette(s): {', '.join(map(str, missing))}")
+
+    target_room = db.get(Room, payload.target_room_id)
+    for pipette in pipettes:
+        old_room_name = pipette.room.name if pipette.room else None
+        pipette.room_id = payload.target_room_id
+        db.add(
+            PipetteEvent(
+                pipette_id=pipette.id,
+                event_type="moved",
+                event_date=datetime.now(timezone.utc),
+                old_value=old_room_name,
+                new_value=target_room.name,
+                notes=payload.notes,
+                created_by=payload.moved_by,
+            )
+        )
+    db.commit()
+    return {"moved": len(pipettes)}
