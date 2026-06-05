@@ -42,11 +42,3 @@ export interface PipetteCreatePayload {
   application_id: number;
   room_id: number;
 }
-
-export interface TimelineEntry {
-  type: string;
-  date: string; // ISO string
-  title: string;
-  detail_text?: string;
-  source: string;
-}
