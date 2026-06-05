@@ -33,8 +33,6 @@ class PipetteListItem(BaseModel):
     use: str
     application: str
     pipette_type: str
-    # Indicates whether the pipette falls under the Sartorius regime (<= 25 µL)
-    requires_sartorius: bool
 
 
 class PipetteDetail(PipetteListItem):
