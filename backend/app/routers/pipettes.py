@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Annotated, Any
+from typing import Annotated, Any, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
@@ -8,8 +8,14 @@ from sqlalchemy.orm import Session, joinedload
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_db
-from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage
-from app.schemas.pipette import PipetteCreate, PipetteDetail, PipetteListItem
+from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage, Calibration
+from app.schemas.pipette import (
+    PipetteCreate,
+    PipetteDetail,
+    PipetteListItem,
+    CalibrationCreate,
+    CalibrationDetail,
+)
 
 router = APIRouter(prefix="/pipettes")
 DbSession = Annotated[Session, Depends(get_db)]
@@ -46,6 +52,25 @@ def _as_list_item(pipette: Pipette) -> PipetteListItem:
         application=pipette.application.name,
         pipette_type=pipette.pipette_type.name,
     )
+
+
+def _as_detail_item(pipette: Pipette) -> PipetteDetail:
+    base = _as_list_item(pipette)
+    # sort calibrations descending by calibration_date
+    sorted_cals = sorted(pipette.calibrations, key=lambda c: c.calibration_date, reverse=True)
+    cal_details: List[CalibrationDetail] = [
+        CalibrationDetail(
+            id=c.id,
+            calibration_date=c.calibration_date.isoformat(),
+            next_due_date=c.next_due_date.isoformat(),
+            result=c.result,
+            performed_by=c.performed_by,
+            certificate_reference=c.certificate_reference,
+            notes=c.notes,
+        )
+        for c in sorted_cals
+    ]
+    return PipetteDetail(**base.dict(), calibrations=cal_details)
 
 
 def _ensure_reference_exists(db: Session, model: type[Any], item_id: int, label: str) -> None:
@@ -146,7 +171,7 @@ def create_pipette(payload: PipetteCreate, db: DbSession) -> PipetteDetail:
         raise HTTPException(status_code=409, detail="Pipette already exists") from exc
 
     db.refresh(pipette)
-    return get_pipette(pipette.id, db)
+    return _as_detail_item(pipette)
 
 
 @router.get(
@@ -167,8 +192,51 @@ def get_pipette(pipette_id: int, db: DbSession) -> PipetteDetail:
             joinedload(Pipette.usage),
             joinedload(Pipette.application),
             joinedload(Pipette.pipette_type),
+            joinedload(Pipette.calibrations),
         )
     )
     if pipette is None:
         _raise_pipette_not_found()
-    return _as_list_item(pipette)
+    return _as_detail_item(pipette)
+
+
+@router.post(
+    "/{pipette_id}/calibrations",
+    status_code=201,
+    responses={
+        404: {"description": "Pipette not found"},
+        422: {"description": "Invalid calibration data"},
+    },
+)
+def create_calibration(pipette_id: int, payload: CalibrationCreate, db: DbSession) -> CalibrationDetail:
+    pipette = db.scalar(select(Pipette).where(Pipette.id == pipette_id))
+    if pipette is None:
+        _raise_pipette_not_found()
+    # Convert dates from str to date objects
+    from datetime import date
+    try:
+        cal_date = date.fromisoformat(payload.calibration_date)
+        next_date = date.fromisoformat(payload.next_due_date)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Invalid date format") from exc
+    calibration = Calibration(
+        pipette_id=pipette.id,
+        calibration_date=cal_date,
+        next_due_date=next_date,
+        result=payload.result,
+        performed_by=payload.performed_by,
+        certificate_reference=payload.certificate_reference,
+        notes=payload.notes,
+    )
+    db.add(calibration)
+    db.commit()
+    db.refresh(calibration)
+    return CalibrationDetail(
+        id=calibration.id,
+        calibration_date=calibration.calibration_date.isoformat(),
+        next_due_date=calibration.next_due_date.isoformat(),
+        result=calibration.result,
+        performed_by=calibration.performed_by,
+        certificate_reference=calibration.certificate_reference,
+        notes=calibration.notes,
+    )

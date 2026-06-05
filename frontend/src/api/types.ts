@@ -42,3 +42,28 @@ export interface PipetteCreatePayload {
   application_id: number;
   room_id: number;
 }
+
+// New calibration interfaces
+export interface CalibrationDetail {
+  id: number;
+  calibration_date: string;
+  next_due_date: string;
+  result?: string;
+  performed_by?: string;
+  certificate_reference?: string;
+  notes?: string;
+}
+
+export interface CalibrationCreatePayload {
+  calibration_date: string;
+  next_due_date: string;
+  result?: string;
+  performed_by?: string;
+  certificate_reference?: string;
+  notes?: string;
+}
+
+// Extended detail type for a pipette
+export interface PipetteDetail extends PipetteListItem {
+  calibrations: CalibrationDetail[];
+}

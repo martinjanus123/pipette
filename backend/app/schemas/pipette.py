@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -35,5 +35,24 @@ class PipetteListItem(BaseModel):
     pipette_type: str
 
 
+class CalibrationCreate(BaseModel):
+    calibration_date: str = Field(..., description="YYYY-MM-DD")
+    next_due_date: str = Field(..., description="YYYY-MM-DD")
+    result: Optional[str] = None
+    performed_by: Optional[str] = None
+    certificate_reference: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class CalibrationDetail(BaseModel):
+    id: int
+    calibration_date: str
+    next_due_date: str
+    result: Optional[str] = None
+    performed_by: Optional[str] = None
+    certificate_reference: Optional[str] = None
+    notes: Optional[str] = None
+
+
 class PipetteDetail(PipetteListItem):
-    pass
+    calibrations: List[CalibrationDetail] = []
