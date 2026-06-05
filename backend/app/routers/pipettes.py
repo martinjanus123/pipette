@@ -20,7 +20,7 @@ OffsetQuery = Annotated[int, Query(ge=0)]
 
 def _description(manufacturer: str, model_name: str, nominal_volume_ul: float) -> str:
     volume = int(nominal_volume_ul) if nominal_volume_ul.is_integer() else nominal_volume_ul
-    return f"{manufacturer} {model_name} {volume} \u00b5L"
+    return f"{manufacturer} {model_name} {volume} µL"
 
 
 def _next_register_number(db: Session) -> int:
@@ -127,32 +127,23 @@ def create_pipette(payload: PipetteCreate, db: DbSession) -> PipetteDetail:
         status="active",
     )
     db.add(pipette)
+    db.flush()
+    db.add(
+        PipetteEvent(
+            pipette_id=pipette.id,
+            event_type="created",
+            event_date=datetime.now(timezone.utc),
+            new_value=pipette.description,
+            notes="Pipette created from baseline API",
+            created_by="system",
+        )
+    )
 
     try:
-        # Flush to obtain the PK and catch any UNIQUE constraint violations early.
-        db.flush()
-        db.add(
-            PipetteEvent(
-                pipette_id=pipette.id,
-                event_type="created",
-                event_date=datetime.now(timezone.utc),
-                new_value=pipette.description,
-                notes="Pipette created from baseline API",
-                created_by="system",
-            )
-        )
         db.commit()
     except IntegrityError as exc:
         db.rollback()
-        # Determine which unique constraint failed based on the DB error message.
-        msg = str(exc.orig) if hasattr(exc, "orig") else str(exc)
-        if "inventory_number" in msg:
-            detail = "Duplicate inventory_number"
-        elif "serial_number" in msg:
-            detail = "Duplicate serial_number"
-        else:
-            detail = "Pipette already exists"
-        raise HTTPException(status_code=409, detail=detail) from exc
+        raise HTTPException(status_code=409, detail="Pipette already exists") from exc
 
     db.refresh(pipette)
     return get_pipette(pipette.id, db)
