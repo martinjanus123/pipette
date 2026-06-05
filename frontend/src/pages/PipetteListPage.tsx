@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { getPipettes } from "../api/pipettes";
@@ -9,37 +9,6 @@ export function PipetteListPage(): JSX.Element {
   const [pipettes, setPipettes] = useState<PipetteListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // sorting state
-  const [sortColumn, setSortColumn] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-
-  const toggleSort = (column: string) => {
-    if (sortColumn === column) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortColumn(column);
-      setSortDirection("asc");
-    }
-  };
-
-  const sortedPipettes = useMemo(() => {
-    if (!sortColumn) return pipettes;
-    const sorted = [...pipettes];
-    sorted.sort((a, b) => {
-      const aVal: any = (a as any)[sortColumn];
-      const bVal: any = (b as any)[sortColumn];
-      // numeric compare for register_number, otherwise string compare
-      if (sortColumn === "register_number") {
-        return aVal - bVal;
-      }
-      // ensure strings for localeCompare
-      const aStr = aVal?.toString() ?? "";
-      const bStr = bVal?.toString() ?? "";
-      return aStr.localeCompare(bStr);
-    });
-    return sortDirection === "asc" ? sorted : sorted.reverse();
-  }, [pipettes, sortColumn, sortDirection]);
 
   useEffect(() => {
     let isMounted = true;
@@ -86,28 +55,16 @@ export function PipetteListPage(): JSX.Element {
         <table>
           <thead>
             <tr>
-              {/* Sortable columns */}
-              <th aria-sort={sortColumn === "register_number" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}>
-                <button type="button" onClick={() => toggleSort("register_number")}>Reg.-Nr.{sortColumn === "register_number" && (sortDirection === "asc" ? " ▲" : " ▼")}</button>
-              </th>
-              <th aria-sort={sortColumn === "inventory_number" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}>
-                <button type="button" onClick={() => toggleSort("inventory_number")}>Inventar-Nr.{sortColumn === "inventory_number" && (sortDirection === "asc" ? " ▲" : " ▼")}</button>
-              </th>
+              <th>Reg.-Nr.</th>
+              <th>Inventar-Nr.</th>
               <th>Serien-Nr.</th>
               <th>Bezeichnung</th>
-              <th aria-sort={sortColumn === "room" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}>
-                <button type="button" onClick={() => toggleSort("room")}>Raum{sortColumn === "room" && (sortDirection === "asc" ? " ▲" : " ▼")}</button>
-              </th>
-              <th aria-sort={sortColumn === "application" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}>
-                <button type="button" onClick={() => toggleSort("application")}>Anwendung{sortColumn === "application" && (sortDirection === "asc" ? " ▲" : " ▼")}</button>
-              </th>
-              <th aria-sort={sortColumn === "status" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}>
-                <button type="button" onClick={() => toggleSort("status")}>Status{sortColumn === "status" && (sortDirection === "asc" ? " ▲" : " ▼")}</button>
-              </th>
+              <th>Raum</th>
+              <th>Anwendung</th>
             </tr>
           </thead>
           <tbody>
-            {sortedPipettes.map((pipette) => (
+            {pipettes.map((pipette) => (
               <tr key={pipette.id}>
                 <td>{pipette.register_number}</td>
                 <td>{pipette.inventory_number}</td>
@@ -117,7 +74,6 @@ export function PipetteListPage(): JSX.Element {
                 </td>
                 <td>{pipette.room}</td>
                 <td>{pipette.application}</td>
-                <td>{pipette.status}</td>
               </tr>
             ))}
           </tbody>
