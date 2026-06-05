@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
-import { getPipette } from "../api/pipettes";
-import type { PipetteListItem } from "../api/types";
+import { getPipette, getPipetteTimeline } from "../api/pipettes";
+import type { PipetteListItem, TimelineEntry } from "../api/types";
 
 export function PipetteDetailPage(): JSX.Element {
   const { id } = useParams();
   const [pipette, setPipette] = useState<PipetteListItem | null>(null);
+  const [timeline, setTimeline] = useState<TimelineEntry[] | null>(null);
+  const [filter, setFilter] = useState<string>("all");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -19,7 +21,18 @@ export function PipetteDetailPage(): JSX.Element {
         setError(null);
       })
       .catch(() => setError("Pipette konnte nicht geladen werden."));
+    getPipetteTimeline(id)
+      .then((entries) => {
+        setTimeline(entries);
+        setError(null);
+      })
+      .catch(() => setError("Timeline konnte nicht geladen werden."));
   }, [id]);
+
+  const filteredTimeline = timeline?.filter((e) => {
+    if (filter === "all") return true;
+    return e.type === filter;
+  }) ?? [];
 
   return (
     <section className="page">
@@ -44,6 +57,28 @@ export function PipetteDetailPage(): JSX.Element {
           <dt>Status</dt>
           <dd>{pipette.status}</dd>
         </dl>
+      )}
+
+      <h3>Timeline</h3>
+      <label>
+        Filter:{" "}
+        <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+          <option value="all">Alle</option>
+          <option value="event">Ereignisse</option>
+          <option value="calibration">Kalibrierungen</option>
+        </select>
+      </label>
+      {timeline === null && !error && <p>Timeline wird geladen.</p>}
+      {timeline && filteredTimeline.length === 0 && <p>Keine Einträge gefunden.</p>}
+      {filteredTimeline.length > 0 && (
+        <ul className="timeline-list">
+          {filteredTimeline.map((entry) => (
+            <li key={entry.date + entry.type} className="timeline-item">
+              <strong>{new Date(entry.date).toLocaleDateString()}</strong> – {entry.title}
+              {entry.detail_text && <p>{entry.detail_text}</p>}
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   );
