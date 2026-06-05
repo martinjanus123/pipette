@@ -48,18 +48,8 @@ export function PipetteListPage(): JSX.Element {
           placeholder="Seriennummer, Inventar-Nr. oder Bezeichnung"
         />
       </label>
-      {/* Reset button appears when a search query is active */}
-      {query && (
-        <button type="button" onClick={() => setQuery("")}>
-          Reset
-        </button>
-      )}
       {isLoading && <p>Pipetten werden geladen.</p>}
       {error && <p className="error">{error}</p>}
-      {/* Show result count when not loading and no error */}
-      {!isLoading && !error && (
-        <p>{pipettes.length} Pipetten</p>
-      )}
       {!isLoading && !error && pipettes.length === 0 && <p>Keine Pipetten vorhanden.</p>}
       {pipettes.length > 0 && (
         <table>
