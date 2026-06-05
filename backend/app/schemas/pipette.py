@@ -33,7 +33,6 @@ class PipetteListItem(BaseModel):
     use: str
     application: str
     pipette_type: str
-    calibration_status: str
 
 
 class PipetteDetail(PipetteListItem):
