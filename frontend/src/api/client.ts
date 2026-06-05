@@ -4,7 +4,11 @@ const ALLOWED_API_ORIGINS = new Set(["http://localhost:8000", "http://127.0.0.1:
 type QueryValue = string | number | boolean | null | undefined;
 
 export function getApiBaseUrl(): string {
-  return import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL;
+  // In environments where import.meta.env is not defined (e.g., test runs),
+  // fall back to an empty object to avoid runtime errors.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const env = (import.meta as any).env ?? {};
+  return env.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL;
 }
 
 export function buildApiUrl(path: string, query?: Record<string, QueryValue>): string {
