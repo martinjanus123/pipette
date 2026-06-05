@@ -43,19 +43,6 @@ export function PipetteDetailPage(): JSX.Element {
           <dd>{pipette.use}</dd>
           <dt>Status</dt>
           <dd>{pipette.status}</dd>
-          {/* Technical fields added */}
-          <dt>Hersteller</dt>
-          <dd>{pipette.manufacturer}</dd>
-          <dt>Modell</dt>
-          <dd>{pipette.model_name}</dd>
-          <dt>Nennvolumen</dt>
-          <dd>{pipette.nominal_volume_ul} µL</dd>
-          <dt>Anzahl Kanaele</dt>
-          <dd>{pipette.channel_count}</dd>
-          <dt>Kalibrierintervall</dt>
-          <dd>{pipette.calibration_interval_months} Monate</dd>
-          <dt>Pipettentyp</dt>
-          <dd>{pipette.pipette_type}</dd>
         </dl>
       )}
     </section>
