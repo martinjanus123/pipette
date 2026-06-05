@@ -20,7 +20,7 @@ OffsetQuery = Annotated[int, Query(ge=0)]
 
 def _description(manufacturer: str, model_name: str, nominal_volume_ul: float) -> str:
     volume = int(nominal_volume_ul) if nominal_volume_ul.is_integer() else nominal_volume_ul
-    return f"{manufacturer} {model_name} {volume} µL"
+    return f"{manufacturer} {model_name} {volume} \u00b5L"
 
 
 def _next_register_number(db: Session) -> int:
@@ -64,6 +64,8 @@ def list_pipettes(
     q: SearchQuery = None,
     limit: LimitQuery = 50,
     offset: OffsetQuery = 0,
+    room_id: Annotated[int | None, Query()] = None,
+    application_id: Annotated[int | None, Query()] = None,
 ) -> list[PipetteListItem]:
     statement = (
         select(Pipette)
@@ -77,6 +79,13 @@ def list_pipettes(
         .limit(limit)
         .offset(offset)
     )
+    # Apply room filter if provided
+    if room_id is not None:
+        statement = statement.where(Pipette.room_id == room_id)
+    # Apply application filter if provided
+    if application_id is not None:
+        statement = statement.where(Pipette.application_id == application_id)
+    # Existing free-text search filter
     if q:
         like = f"%{q}%"
         statement = statement.where(
