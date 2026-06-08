@@ -30,7 +30,12 @@ export function PipetteDetailPage(): JSX.Element {
       {pipette && (
         <dl className="detail-list">
           <dt>Bezeichnung</dt>
-          <dd>{pipette.description}</dd>
+          <dd>
+            {pipette.description}
+            {pipette.requires_sartorius && (
+              <span style={{ marginLeft: "0.5rem", color: "red" }}>Sartorius</span>
+            )}
+          </dd>
           <dt>Inventar-Nr.</dt>
           <dd>{pipette.inventory_number}</dd>
           <dt>Serien-Nr.</dt>

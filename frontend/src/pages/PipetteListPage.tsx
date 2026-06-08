@@ -71,6 +71,9 @@ export function PipetteListPage(): JSX.Element {
                 <td>{pipette.serial_number}</td>
                 <td>
                   <Link to={`/pipettes/${pipette.id}`}>{pipette.description}</Link>
+                  {pipette.requires_sartorius && (
+                    <span style={{ marginLeft: "0.5rem", color: "red" }}>Sartorius</span>
+                  )}
                 </td>
                 <td>{pipette.room}</td>
                 <td>{pipette.application}</td>

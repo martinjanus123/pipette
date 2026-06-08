@@ -28,6 +28,11 @@ def _next_register_number(db: Session) -> int:
     return (current_max or 0) + 1
 
 
+def _requires_sartorius(nominal_volume_ul: float) -> bool:
+    """Return True if the pipette nominal volume is less than or equal to 25 µL."""
+    return nominal_volume_ul <= 25
+
+
 def _as_list_item(pipette: Pipette) -> PipetteListItem:
     return PipetteListItem(
         id=pipette.id,
@@ -45,6 +50,7 @@ def _as_list_item(pipette: Pipette) -> PipetteListItem:
         use=pipette.usage.name,
         application=pipette.application.name,
         pipette_type=pipette.pipette_type.name,
+        requires_sartorius=_requires_sartorius(pipette.nominal_volume_ul),
     )
 
 
