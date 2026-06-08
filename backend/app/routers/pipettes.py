@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Annotated, Any
+from typing import Annotated, Any, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
@@ -9,7 +9,13 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_db
 from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage
-from app.schemas.pipette import PipetteCreate, PipetteDetail, PipetteListItem
+from app.schemas.pipette import (
+    PipetteCreate,
+    PipetteDetail,
+    PipetteListItem,
+    PipetteStatusChange,
+    PipetteEvent as PipetteEventSchema,
+)
 
 router = APIRouter(prefix="/pipettes")
 DbSession = Annotated[Session, Depends(get_db)]
@@ -46,6 +52,32 @@ def _as_list_item(pipette: Pipette) -> PipetteListItem:
         application=pipette.application.name,
         pipette_type=pipette.pipette_type.name,
     )
+
+
+def _as_detail_item(pipette: Pipette) -> PipetteDetail:
+    """Convert a Pipette ORM object to the PipetteDetail schema, including events.
+
+    Events are sorted by event_date descending as required by the frontend and tests.
+    """
+    base = _as_list_item(pipette)
+    events: List[PipetteEventSchema] = []
+    if pipette.events:
+        sorted_events = sorted(pipette.events, key=lambda e: e.event_date, reverse=True)
+        for ev in sorted_events:
+            events.append(
+                PipetteEventSchema(
+                    id=ev.id,
+                    event_type=ev.event_type,
+                    event_date=ev.event_date.isoformat(),
+                    old_value=ev.old_value,
+                    new_value=ev.new_value,
+                    notes=ev.notes,
+                    created_by=ev.created_by,
+                )
+            )
+    detail_dict = base.dict()
+    detail_dict["events"] = events
+    return PipetteDetail(**detail_dict)
 
 
 def _ensure_reference_exists(db: Session, model: type[Any], item_id: int, label: str) -> None:
@@ -167,8 +199,46 @@ def get_pipette(pipette_id: int, db: DbSession) -> PipetteDetail:
             joinedload(Pipette.usage),
             joinedload(Pipette.application),
             joinedload(Pipette.pipette_type),
+            joinedload(Pipette.events),
         )
     )
     if pipette is None:
         _raise_pipette_not_found()
-    return _as_list_item(pipette)
+    return _as_detail_item(pipette)
+
+
+@router.patch(
+    "/{pipette_id}/status",
+    responses={
+        200: {"description": "Pipette status updated"},
+        400: {"description": "Invalid status value"},
+        404: {"description": "Pipette not found"},
+    },
+)
+def patch_pipette_status(pipette_id: int, payload: PipetteStatusChange, db: DbSession) -> PipetteDetail:
+    pipette = db.scalar(
+        select(Pipette)
+        .where(Pipette.id == pipette_id)
+        .options(joinedload(Pipette.events))
+    )
+    if pipette is None:
+        _raise_pipette_not_found()
+
+    old_status = pipette.status
+    new_status = payload.status
+    # No additional validation needed; Pydantic ensures allowed values.
+    pipette.status = new_status
+    db.add(
+        PipetteEvent(
+            pipette_id=pipette.id,
+            event_type="status_changed",
+            event_date=datetime.now(timezone.utc),
+            old_value=old_status,
+            new_value=new_status,
+            notes=payload.notes,
+            created_by=payload.created_by,
+        )
+    )
+    db.commit()
+    db.refresh(pipette)
+    return _as_detail_item(pipette)
