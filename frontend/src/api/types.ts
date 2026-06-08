@@ -29,6 +29,20 @@ export interface PipetteListItem {
   pipette_type: string;
 }
 
+export interface CalibrationRead {
+  id: number;
+  calibration_date: string; // ISO date
+  next_due_date: string;
+  result?: string | null;
+  performed_by?: string | null;
+  certificate_reference?: string | null;
+  notes?: string | null;
+}
+
+export interface PipetteDetail extends PipetteListItem {
+  calibrations: CalibrationRead[];
+}
+
 export interface PipetteCreatePayload {
   manufacturer: string;
   model_name: string;
