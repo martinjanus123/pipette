@@ -16,6 +16,8 @@ DbSession = Annotated[Session, Depends(get_db)]
 SearchQuery = Annotated[str | None, Query()]
 LimitQuery = Annotated[int, Query(ge=1, le=200)]
 OffsetQuery = Annotated[int, Query(ge=0)]
+RoomIdQuery = Annotated[int | None, Query()]  # optional room filter
+ApplicationIdQuery = Annotated[int | None, Query()]  # optional application filter
 
 
 def _description(manufacturer: str, model_name: str, nominal_volume_ul: float) -> str:
@@ -62,6 +64,8 @@ def _raise_pipette_not_found() -> None:
 def list_pipettes(
     db: DbSession,
     q: SearchQuery = None,
+    room_id: RoomIdQuery = None,
+    application_id: ApplicationIdQuery = None,
     limit: LimitQuery = 50,
     offset: OffsetQuery = 0,
 ) -> list[PipetteListItem]:
@@ -88,6 +92,11 @@ def list_pipettes(
                 Pipette.model_name.ilike(like),
             )
         )
+    # Apply optional filters – they are combined with existing WHEREs via AND
+    if room_id is not None:
+        statement = statement.where(Pipette.room_id == room_id)
+    if application_id is not None:
+        statement = statement.where(Pipette.application_id == application_id)
 
     return [_as_list_item(pipette) for pipette in db.scalars(statement).all()]
 
