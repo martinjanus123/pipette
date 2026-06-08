@@ -29,20 +29,6 @@ export interface PipetteListItem {
   pipette_type: string;
 }
 
-export interface PipetteEvent {
-  id: number;
-  event_type: string;
-  event_date: string; // ISO string
-  old_value: string | null;
-  new_value: string | null;
-  notes: string | null;
-  created_by: string | null;
-}
-
-export interface PipetteDetail extends PipetteListItem {
-  events: PipetteEvent[];
-}
-
 export interface PipetteCreatePayload {
   manufacturer: string;
   model_name: string;
