@@ -10,6 +10,14 @@ export function PipetteListPage(): JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // CSV import UI state
+  const [showImport, setShowImport] = useState(false);
+  const [csvText, setCsvText] = useState("");
+  const [importResult, setImportResult] = useState<
+    { imported_count: number; errors: Array<{ row: number; field: string; message: string }> } | null
+  >(null);
+  const [importError, setImportError] = useState<string | null>(null);
+
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
@@ -36,10 +44,66 @@ export function PipetteListPage(): JSX.Element {
     };
   }, [query]);
 
+  const handleImport = async () => {
+    setImportError(null);
+    setImportResult(null);
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL ?? ""}/api/calibrations/import`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ csv_text: csvText }),
+      });
+      if (!response.ok) {
+        throw new Error("Import failed");
+      }
+      const data = await response.json();
+      setImportResult(data);
+    } catch (e) {
+      setImportError("Import konnte nicht durchgeführt werden.");
+    }
+  };
+
   return (
     <section className="page">
       <p className="eyebrow">Uebersicht</p>
       <h2>Pipettenliste</h2>
+      {/* CSV Import button and form */}
+      <button type="button" onClick={() => setShowImport(!showImport)}>
+        CSV-Import
+      </button>
+      {showImport && (
+        <div className="import-form" style={{ marginTop: "1em" }}>
+          <p>Beispiel Header: pipette_identifier,calibration_date,next_due_date,result,performed_by,certificate_reference,notes</p>
+          <label className="field">
+            <span>CSV Import</span>
+            <textarea
+              aria-label="CSV Import"
+              value={csvText}
+              onChange={(e) => setCsvText(e.target.value)}
+              rows={6}
+              style={{ width: "100%" }}
+            />
+          </label>
+          <button type="button" onClick={handleImport}>
+            Importieren
+          </button>
+          {importError && <p className="error">{importError}</p>}
+          {importResult && (
+            <div className="import-result" style={{ marginTop: "1em" }}>
+              <p>Importierte Zeilen: {importResult.imported_count}</p>
+              {importResult.errors && importResult.errors.length > 0 && (
+                <ul>
+                  {importResult.errors.map((err, idx) => (
+                    <li key={idx}>
+                      Zeile {err.row}: {err.field} – {err.message}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      )}
       <label className="field">
         <span>Suche</span>
         <input
