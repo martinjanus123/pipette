@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Annotated, Any, Literal, List
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
@@ -8,13 +8,8 @@ from sqlalchemy.orm import Session, joinedload
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_db
-from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage, Calibration
-from app.schemas.pipette import (
-    PipetteCreate,
-    PipetteDetail,
-    PipetteListItem,
-    TimelineEntry,
-)
+from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage
+from app.schemas.pipette import PipetteCreate, PipetteDetail, PipetteListItem
 
 router = APIRouter(prefix="/pipettes")
 DbSession = Annotated[Session, Depends(get_db)]
@@ -177,55 +172,3 @@ def get_pipette(pipette_id: int, db: DbSession) -> PipetteDetail:
     if pipette is None:
         _raise_pipette_not_found()
     return _as_list_item(pipette)
-
-
-@router.get(
-    "/{pipette_id}/timeline",
-    response_model=List[TimelineEntry],
-    responses={
-        404: {
-            "description": "Pipette not found",
-            "content": {"application/json": {"example": {"detail": "Pipette not found"}}},
-        }
-    },
-)
-def get_timeline(pipette_id: int, db: DbSession) -> List[TimelineEntry]:
-    # Verify pipette exists
-    exists = db.scalar(select(Pipette.id).where(Pipette.id == pipette_id))
-    if not exists:
-        _raise_pipette_not_found()
-
-    # Gather events (excluding the automatic 'created' event)
-    event_rows = db.scalars(
-        select(PipetteEvent)
-        .where(PipetteEvent.pipette_id == pipette_id)
-        .where(PipetteEvent.event_type != "created")
-    ).all()
-    events: List[TimelineEntry] = [
-        TimelineEntry(
-            type="event",
-            date=row.event_date.isoformat(),
-            title=row.event_type,
-            detail=row.notes,
-            source="pipette_event",
-        )
-        for row in event_rows
-    ]
-
-    # Gather calibrations
-    calib_rows = db.scalars(select(Calibration).where(Calibration.pipette_id == pipette_id)).all()
-    calibrations: List[TimelineEntry] = [
-        TimelineEntry(
-            type="calibration",
-            date=row.calibration_date.isoformat(),
-            title=row.result if row.result else "Kalibrierung",
-            detail=row.certificate_reference,
-            source="calibration",
-        )
-        for row in calib_rows
-    ]
-
-    combined = events + calibrations
-    # Sort descending by date string (ISO sortable)
-    combined.sort(key=lambda entry: entry.date, reverse=True)
-    return combined
