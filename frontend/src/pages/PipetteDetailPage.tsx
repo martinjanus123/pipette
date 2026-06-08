@@ -43,6 +43,12 @@ export function PipetteDetailPage(): JSX.Element {
           <dd>{pipette.use}</dd>
           <dt>Status</dt>
           <dd>{pipette.status}</dd>
+          {pipette.requires_sartorius && (
+            <>
+              <dt>Sartorius</dt>
+              <dd>Ja</dd>
+            </>
+          )}
         </dl>
       )}
     </section>
