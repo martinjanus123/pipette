@@ -15,17 +15,3 @@ export async function createPipette(payload: PipetteCreatePayload): Promise<Pipe
     body: JSON.stringify(payload)
   });
 }
-
-export interface BulkRoomMovePayload {
-  pipette_ids: number[];
-  target_room_id: number;
-  notes?: string;
-  created_by: string;
-}
-
-export async function bulkRoomMove(payload: BulkRoomMovePayload): Promise<{ moved_ids: number[] }> {
-  return apiRequest<{ moved_ids: number[] }>("/api/pipettes/bulk-room-move", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-}
