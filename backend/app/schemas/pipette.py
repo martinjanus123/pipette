@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -37,3 +37,14 @@ class PipetteListItem(BaseModel):
 
 class PipetteDetail(PipetteListItem):
     pass
+
+
+class BulkRoomMoveRequest(BaseModel):
+    pipette_ids: List[int]
+    target_room_id: int
+    notes: Optional[str] = None
+    created_by: str
+
+
+class BulkRoomMoveResponse(BaseModel):
+    moved_ids: List[int]

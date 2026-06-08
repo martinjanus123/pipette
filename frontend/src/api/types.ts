@@ -42,3 +42,10 @@ export interface PipetteCreatePayload {
   application_id: number;
   room_id: number;
 }
+
+export interface BulkRoomMoveRequest {
+  pipette_ids: number[];
+  target_room_id: number;
+  notes?: string;
+  created_by: string;
+}
