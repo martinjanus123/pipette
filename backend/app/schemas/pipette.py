@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -37,13 +37,3 @@ class PipetteListItem(BaseModel):
 
 class PipetteDetail(PipetteListItem):
     pass
-
-
-class TimelineEntry(BaseModel):
-    """Schema for timeline entries combining events and calibrations"""
-
-    type: Literal["event", "calibration"]
-    date: str  # ISO formatted datetime or date string
-    title: str
-    detail: Optional[str] = None
-    source: Literal["pipette_event", "calibration"]

@@ -42,11 +42,3 @@ export interface PipetteCreatePayload {
   application_id: number;
   room_id: number;
 }
-
-export interface TimelineEntry {
-  type: "event" | "calibration";
-  date: string;
-  title: string;
-  detail?: string | null;
-  source: "pipette_event" | "calibration";
-}
