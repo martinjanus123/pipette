@@ -16,6 +16,12 @@ DbSession = Annotated[Session, Depends(get_db)]
 SearchQuery = Annotated[str | None, Query()]
 LimitQuery = Annotated[int, Query(ge=1, le=200)]
 OffsetQuery = Annotated[int, Query(ge=0)]
+# Additional optional filter queries
+RoomIdQuery = Annotated[int | None, Query(alias="room_id")]
+ApplicationIdQuery = Annotated[int | None, Query(alias="application_id")]
+UseIdQuery = Annotated[int | None, Query(alias="use_id")]
+PipetteTypeIdQuery = Annotated[int | None, Query(alias="pipette_type_id")]
+StatusQuery = Annotated[str | None, Query(alias="status")]
 
 
 def _description(manufacturer: str, model_name: str, nominal_volume_ul: float) -> str:
@@ -64,8 +70,14 @@ def list_pipettes(
     q: SearchQuery = None,
     limit: LimitQuery = 50,
     offset: OffsetQuery = 0,
-) -> list[PipetteListItem]:
-    statement = (
+    room_id: RoomIdQuery = None,
+    application_id: ApplicationIdQuery = None,
+    use_id: UseIdQuery = None,
+    pipette_type_id: PipetteTypeIdQuery = None,
+    status: StatusQuery = None,
+) -> dict:
+    # Base statement with joins for eager loading
+    base_stmt = (
         select(Pipette)
         .options(
             joinedload(Pipette.room),
@@ -74,12 +86,12 @@ def list_pipettes(
             joinedload(Pipette.pipette_type),
         )
         .order_by(Pipette.register_number)
-        .limit(limit)
-        .offset(offset)
     )
+
+    # Apply filters
     if q:
         like = f"%{q}%"
-        statement = statement.where(
+        base_stmt = base_stmt.where(
             or_(
                 Pipette.inventory_number.ilike(like),
                 Pipette.serial_number.ilike(like),
@@ -88,8 +100,26 @@ def list_pipettes(
                 Pipette.model_name.ilike(like),
             )
         )
+    if room_id is not None:
+        base_stmt = base_stmt.where(Pipette.room_id == room_id)
+    if application_id is not None:
+        base_stmt = base_stmt.where(Pipette.application_id == application_id)
+    if use_id is not None:
+        base_stmt = base_stmt.where(Pipette.use_id == use_id)
+    if pipette_type_id is not None:
+        base_stmt = base_stmt.where(Pipette.pipette_type_id == pipette_type_id)
+    if status is not None:
+        base_stmt = base_stmt.where(Pipette.status == status)
 
-    return [_as_list_item(pipette) for pipette in db.scalars(statement).all()]
+    # Total count before limit/offset
+    total_stmt = select(func.count()).select_from(base_stmt.subquery())
+    total = db.scalar(total_stmt) or 0
+
+    # Apply pagination
+    stmt = base_stmt.limit(limit).offset(offset)
+    items = [_as_list_item(p) for p in db.scalars(stmt).all()]
+
+    return {"items": items, "total": total, "limit": limit, "offset": offset}
 
 
 @router.post(

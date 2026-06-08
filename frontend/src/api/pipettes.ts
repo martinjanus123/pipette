@@ -1,8 +1,9 @@
 import { apiRequest } from "./client";
-import type { PipetteCreatePayload, PipetteListItem } from "./types";
+import type { PipetteCreatePayload, PipetteListItem, PaginatedPipetteResponse } from "./types";
 
 export async function getPipettes(query?: string): Promise<PipetteListItem[]> {
-  return apiRequest<PipetteListItem[]>("/api/pipettes", undefined, { q: query });
+  const resp = await apiRequest<PaginatedPipetteResponse>("/api/pipettes", undefined, { q: query });
+  return resp.items;
 }
 
 export async function getPipette(id: string): Promise<PipetteListItem> {
