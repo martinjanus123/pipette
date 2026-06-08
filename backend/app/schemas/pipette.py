@@ -1,6 +1,8 @@
-from typing import Literal
+from typing import Literal, List
 
 from pydantic import BaseModel, Field
+
+from .calibration import CalibrationRead
 
 
 class PipetteCreate(BaseModel):
@@ -36,4 +38,4 @@ class PipetteListItem(BaseModel):
 
 
 class PipetteDetail(PipetteListItem):
-    pass
+    calibrations: List[CalibrationRead] = []
