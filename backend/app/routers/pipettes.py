@@ -1,10 +1,10 @@
-from datetime import datetime, timezone, date, timedelta
+from datetime import datetime, timezone
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm import Session, joinedload
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_db
@@ -20,33 +20,12 @@ OffsetQuery = Annotated[int, Query(ge=0)]
 
 def _description(manufacturer: str, model_name: str, nominal_volume_ul: float) -> str:
     volume = int(nominal_volume_ul) if nominal_volume_ul.is_integer() else nominal_volume_ul
-    return f"{manufacturer} {model_name} {volume} \u00b5L"
+    return f"{manufacturer} {model_name} {volume} µL"
 
 
 def _next_register_number(db: Session) -> int:
     current_max = db.scalar(select(func.max(Pipette.register_number)))
     return (current_max or 0) + 1
-
-
-def _calibration_status(pipette: Pipette) -> str:
-    """Determine calibration status based on the most recent calibration.
-
-    Returns one of "gray", "red", "yellow", "green" according to the rules:
-    * No calibrations → "gray"
-    * Next due date < today → "red"
-    * Next due date within next 30 days (including today) → "yellow"
-    * Otherwise → "green"
-    """
-    if not pipette.calibrations:
-        return "gray"
-    latest = max(pipette.calibrations, key=lambda c: c.calibration_date)
-    nd = latest.next_due_date
-    today = date.today()
-    if nd < today:
-        return "red"
-    if nd <= today + timedelta(days=30):
-        return "yellow"
-    return "green"
 
 
 def _as_list_item(pipette: Pipette) -> PipetteListItem:
@@ -66,7 +45,6 @@ def _as_list_item(pipette: Pipette) -> PipetteListItem:
         use=pipette.usage.name,
         application=pipette.application.name,
         pipette_type=pipette.pipette_type.name,
-        calibration_status=_calibration_status(pipette),
     )
 
 
@@ -94,7 +72,6 @@ def list_pipettes(
             joinedload(Pipette.usage),
             joinedload(Pipette.application),
             joinedload(Pipette.pipette_type),
-            selectinload(Pipette.calibrations),
         )
         .order_by(Pipette.register_number)
         .limit(limit)
@@ -190,7 +167,6 @@ def get_pipette(pipette_id: int, db: DbSession) -> PipetteDetail:
             joinedload(Pipette.usage),
             joinedload(Pipette.application),
             joinedload(Pipette.pipette_type),
-            joinedload(Pipette.calibrations),
         )
     )
     if pipette is None:
