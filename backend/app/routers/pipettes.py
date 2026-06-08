@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Annotated, Any
+from typing import Annotated, Any, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
@@ -9,7 +9,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_db
 from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage
-from app.schemas.pipette import PipetteCreate, PipetteDetail, PipetteListItem
+from app.schemas.pipette import PipetteCreate, PipetteDetail, PipetteListItem, BulkRoomMoveRequest
 
 router = APIRouter(prefix="/pipettes")
 DbSession = Annotated[Session, Depends(get_db)]
@@ -172,3 +172,46 @@ def get_pipette(pipette_id: int, db: DbSession) -> PipetteDetail:
     if pipette is None:
         _raise_pipette_not_found()
     return _as_list_item(pipette)
+
+
+@router.post(
+    "/bulk-room-move",
+    responses={
+        200: {"description": "Bulk move successful"},
+        422: {"description": "Validation error"},
+    },
+)
+def bulk_room_move(request: BulkRoomMoveRequest, db: DbSession) -> dict[str, List[int]]:
+    """Move multiple pipettes to a target room atomically.
+
+    Raises HTTPException with status 422 if any pipette ID or the target room is unknown.
+    """
+    # Validate target room exists
+    _ensure_reference_exists(db, Room, request.target_room_id, "room_id")
+
+    # Validate all pipette IDs exist
+    existing_ids = db.scalars(select(Pipette.id).where(Pipette.id.in_(request.pipette_ids))).all()
+    if set(existing_ids) != set(request.pipette_ids):
+        raise HTTPException(status_code=422, detail="One or more pipettes not found")
+
+    # Load pipettes with current room relationship for old value reference
+    pipettes = db.scalars(select(Pipette).where(Pipette.id.in_(request.pipette_ids))).all()
+    target_room = db.get(Room, request.target_room_id)
+
+    # Perform updates
+    for pipette in pipettes:
+        old_room_id = pipette.room_id
+        pipette.room_id = request.target_room_id
+        db.add(
+            PipetteEvent(
+                pipette_id=pipette.id,
+                event_type="moved",
+                event_date=datetime.now(timezone.utc),
+                old_value=str(old_room_id),
+                new_value=str(request.target_room_id),
+                notes=request.notes or "",
+                created_by=request.created_by or "system",
+            )
+        )
+    db.commit()
+    return {"moved_ids": request.pipette_ids}
