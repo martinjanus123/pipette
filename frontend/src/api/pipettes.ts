@@ -1,5 +1,5 @@
 import { apiRequest } from "./client";
-import type { PipetteCreatePayload, PipetteListItem } from "./types";
+import type { PipetteCreatePayload, PipetteListItem, TimelineEntry } from "./types";
 
 export async function getPipettes(query?: string): Promise<PipetteListItem[]> {
   return apiRequest<PipetteListItem[]>("/api/pipettes", undefined, { q: query });
@@ -14,4 +14,8 @@ export async function createPipette(payload: PipetteCreatePayload): Promise<Pipe
     method: "POST",
     body: JSON.stringify(payload)
   });
+}
+
+export async function getPipetteTimeline(id: string): Promise<TimelineEntry[]> {
+  return apiRequest<TimelineEntry[]>(`/api/pipettes/${id}/timeline`);
 }
