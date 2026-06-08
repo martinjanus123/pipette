@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import { getDropdownData } from "../api/dropdowns";
 import { createPipette } from "../api/pipettes";
+import { createApplication } from "../api/applications";
 import type { DropdownData, PipetteCreatePayload } from "../api/types";
 
 const initialForm = {
@@ -16,7 +17,7 @@ const initialForm = {
   nominal_volume_ul: "",
   calibration_interval_months: "12",
   application_id: "",
-  room_id: ""
+  room_id: "",
 };
 
 export function PipetteCreatePage(): JSX.Element {
@@ -25,6 +26,7 @@ export function PipetteCreatePage(): JSX.Element {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newApplicationName, setNewApplicationName] = useState<string>("");
 
   useEffect(() => {
     getDropdownData()
@@ -35,7 +37,7 @@ export function PipetteCreatePage(): JSX.Element {
           use_id: String(data.uses[0]?.id ?? ""),
           pipette_type_id: String(data.pipetteTypes[0]?.id ?? ""),
           application_id: String(data.applications[0]?.id ?? ""),
-          room_id: String(data.rooms[0]?.id ?? "")
+          room_id: String(data.rooms[0]?.id ?? ""),
         }));
       })
       .catch(() => setError("Dropdown-Daten konnten nicht geladen werden."));
@@ -45,6 +47,29 @@ export function PipetteCreatePage(): JSX.Element {
 
   function updateField(name: keyof typeof form, value: string): void {
     setForm((current) => ({ ...current, [name]: value }));
+  }
+
+  async function handleAddApplication(): Promise<void> {
+    if (!newApplicationName.trim()) return;
+    try {
+      const created = await createApplication(newApplicationName.trim());
+      // Update dropdowns with new application and select it
+      setDropdowns((prev) =>
+        prev
+          ? {
+              ...prev,
+              applications: [...prev.applications, created],
+            }
+          : prev,
+      );
+      setForm((current) => ({
+        ...current,
+        application_id: String(created.id),
+      }));
+      setNewApplicationName("");
+    } catch {
+      // ignore UI errors for now
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
@@ -62,7 +87,7 @@ export function PipetteCreatePage(): JSX.Element {
       nominal_volume_ul: Number(form.nominal_volume_ul),
       calibration_interval_months: Number(form.calibration_interval_months) as 6 | 12,
       application_id: Number(form.application_id),
-      room_id: Number(form.room_id)
+      room_id: Number(form.room_id),
     };
 
     try {
@@ -182,6 +207,18 @@ export function PipetteCreatePage(): JSX.Element {
               ))}
             </select>
           </label>
+          {/* New Application input */}
+          <label className="field">
+            <span>Neue Anwendung</span>
+            <input
+              value={newApplicationName}
+              onChange={(e) => setNewApplicationName(e.target.value)}
+              placeholder="Name der neuen Anwendung"
+            />
+          </label>
+          <button type="button" onClick={handleAddApplication} disabled={!newApplicationName.trim()}>
+            Anwendung anlegen
+          </button>
           <label className="field">
             <span>Raum</span>
             <select value={form.room_id} onChange={(event) => updateField("room_id", event.target.value)}>
