@@ -1,5 +1,5 @@
-from datetime import datetime, timezone
-from typing import Annotated, Any
+from datetime import datetime, timezone, date
+from typing import Annotated, Any, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
@@ -8,8 +8,14 @@ from sqlalchemy.orm import Session, joinedload
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_db
-from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage
-from app.schemas.pipette import PipetteCreate, PipetteDetail, PipetteListItem
+from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage, Calibration
+from app.schemas.pipette import (
+    PipetteCreate,
+    PipetteDetail,
+    PipetteListItem,
+    CalibrationCreate,
+    CalibrationRead,
+)
 
 router = APIRouter(prefix="/pipettes")
 DbSession = Annotated[Session, Depends(get_db)]
@@ -20,7 +26,7 @@ OffsetQuery = Annotated[int, Query(ge=0)]
 
 def _description(manufacturer: str, model_name: str, nominal_volume_ul: float) -> str:
     volume = int(nominal_volume_ul) if nominal_volume_ul.is_integer() else nominal_volume_ul
-    return f"{manufacturer} {model_name} {volume} µL"
+    return f"{manufacturer} {model_name} {volume} \u00b5L"
 
 
 def _next_register_number(db: Session) -> int:
@@ -46,6 +52,26 @@ def _as_list_item(pipette: Pipette) -> PipetteListItem:
         application=pipette.application.name,
         pipette_type=pipette.pipette_type.name,
     )
+
+
+def _as_detail(pipette: Pipette) -> PipetteDetail:
+    calibrations: List[CalibrationRead] = []
+    if pipette.calibrations:
+        sorted_cal = sorted(pipette.calibrations, key=lambda c: c.calibration_date, reverse=True)
+        calibrations = [
+            CalibrationRead(
+                id=c.id,
+                calibration_date=c.calibration_date.isoformat(),
+                next_due_date=c.next_due_date.isoformat(),
+                result=c.result,
+                performed_by=c.performed_by,
+                certificate_reference=c.certificate_reference,
+                notes=c.notes,
+            )
+            for c in sorted_cal
+        ]
+    base = _as_list_item(pipette)
+    return PipetteDetail(**base.dict(), calibrations=calibrations)
 
 
 def _ensure_reference_exists(db: Session, model: type[Any], item_id: int, label: str) -> None:
@@ -167,8 +193,50 @@ def get_pipette(pipette_id: int, db: DbSession) -> PipetteDetail:
             joinedload(Pipette.usage),
             joinedload(Pipette.application),
             joinedload(Pipette.pipette_type),
+            joinedload(Pipette.calibrations),
         )
     )
     if pipette is None:
         _raise_pipette_not_found()
-    return _as_list_item(pipette)
+    return _as_detail(pipette)
+
+
+@router.post(
+    "/{pipette_id}/calibrations",
+    status_code=201,
+    responses={
+        404: {"description": "Pipette not found"},
+        422: {"description": "Invalid payload"},
+    },
+)
+def create_calibration(pipette_id: int, payload: CalibrationCreate, db: DbSession) -> CalibrationRead:
+    pipette_exists = db.scalar(select(Pipette.id).where(Pipette.id == pipette_id))
+    if pipette_exists is None:
+        _raise_pipette_not_found()
+    # Parse dates from ISO strings to date objects
+    try:
+        cal_date: date = date.fromisoformat(payload.calibration_date)
+        next_due: date = date.fromisoformat(payload.next_due_date)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Invalid date format") from exc
+    cal = Calibration(
+        pipette_id=pipette_id,
+        calibration_date=cal_date,
+        next_due_date=next_due,
+        result=payload.result,
+        performed_by=payload.performed_by,
+        certificate_reference=payload.certificate_reference,
+        notes=payload.notes,
+    )
+    db.add(cal)
+    db.commit()
+    db.refresh(cal)
+    return CalibrationRead(
+        id=cal.id,
+        calibration_date=cal.calibration_date.isoformat(),
+        next_due_date=cal.next_due_date.isoformat(),
+        result=cal.result,
+        performed_by=cal.performed_by,
+        certificate_reference=cal.certificate_reference,
+        notes=cal.notes,
+    )
