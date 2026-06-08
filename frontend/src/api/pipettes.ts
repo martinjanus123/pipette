@@ -15,3 +15,15 @@ export async function createPipette(payload: PipetteCreatePayload): Promise<Pipe
     body: JSON.stringify(payload)
   });
 }
++
++export interface TimelineEntry {
++  type: string;
++  date: string;
++  title: string;
++  detail: string;
++  source: string;
++}
++
++export async function getTimeline(pipetteId: string): Promise<TimelineEntry[]> {
++  return apiRequest<TimelineEntry[]>(`/api/pipettes/${pipetteId}/timeline`);
++}
