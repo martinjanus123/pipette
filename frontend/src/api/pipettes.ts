@@ -1,5 +1,5 @@
 import { apiRequest } from "./client";
-import type { PipetteCreatePayload, PipetteListItem } from "./types";
+import type { PipetteCreatePayload, PipetteListItem, CalibrationImportResponse } from "./types";
 
 export async function getPipettes(query?: string): Promise<PipetteListItem[]> {
   return apiRequest<PipetteListItem[]>("/api/pipettes", undefined, { q: query });
@@ -15,3 +15,10 @@ export async function createPipette(payload: PipetteCreatePayload): Promise<Pipe
     body: JSON.stringify(payload)
   });
 }
++
++export async function importCalibrations(csvText: string): Promise<CalibrationImportResponse> {
++  return apiRequest<CalibrationImportResponse>("/api/calibrations/import", {
++    method: "POST",
++    body: JSON.stringify({ csv_text: csvText })
++  });
++}

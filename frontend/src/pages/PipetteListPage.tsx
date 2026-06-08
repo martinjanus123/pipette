@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { getPipettes } from "../api/pipettes";
-import type { PipetteListItem } from "../api/types";
+import { getPipettes, importCalibrations } from "../api/pipettes";
+import type { PipetteListItem, CalibrationImportResponse } from "../api/types";
 
 export function PipetteListPage(): JSX.Element {
   const [query, setQuery] = useState("");
   const [pipettes, setPipettes] = useState<PipetteListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
++
++  const [showImport, setShowImport] = useState(false);
++  const [csvText, setCsvText] = useState("");
++  const [importResult, setImportResult] = useState<CalibrationImportResponse | null>(null);
++  const [importError, setImportError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -35,6 +40,17 @@ export function PipetteListPage(): JSX.Element {
       isMounted = false;
     };
   }, [query]);
++
++  const handleImportSubmit = async (event: React.FormEvent) => {
++    event.preventDefault();
++    setImportError(null);
++    try {
++      const result = await importCalibrations(csvText);
++      setImportResult(result);
++    } catch (e) {
++      setImportError("Import fehlgeschlagen.");
++    }
++  };
 
   return (
     <section className="page">
@@ -48,6 +64,39 @@ export function PipetteListPage(): JSX.Element {
           placeholder="Seriennummer, Inventar-Nr. oder Bezeichnung"
         />
       </label>
++      <button type="button" onClick={() => setShowImport((prev) => !prev)}>
++        CSV Import
++      </button>
++      {showImport && (
++        <form onSubmit={handleImportSubmit} style={{ marginTop: "1rem" }}>
++          <label className="field">
++            <span>CSV Import</span>
++            <textarea
++              aria-label="CSV Import"
++              value={csvText}
++              onChange={(e) => setCsvText(e.target.value)}
++              rows={6}
++            />
++          </label>
++          <button type="submit">Importieren</button>
++        </form>
++      )}
++      {importResult && (
++        <div style={{ marginTop: "1rem" }}>
++          <p>Importiert: {importResult.imported_count}</p>
++          {importResult.errors.length > 0 && (
++            <div>
++              <p>Fehler:</p>
++              {importResult.errors.map((err, idx) => (
++                <p key={idx}>
++                  Zeile {err.row}: {err.field} – {err.message}
++                </p>
++              ))}
++            </div>
++          )}
++        </div>
++      )}
++      {importError && <p className="error">{importError}</p>}
       {isLoading && <p>Pipetten werden geladen.</p>}
       {error && <p className="error">{error}</p>}
       {!isLoading && !error && pipettes.length === 0 && <p>Keine Pipetten vorhanden.</p>}
