@@ -106,6 +106,13 @@ def create_pipette(payload: PipetteCreate, db: DbSession) -> PipetteDetail:
     _ensure_reference_exists(db, Usage, payload.use_id, "use_id")
     _ensure_reference_exists(db, PipetteType, payload.pipette_type_id, "pipette_type_id")
 
+    # Check for duplicate inventory_number
+    if db.scalar(select(Pipette.id).where(Pipette.inventory_number == payload.inventory_number)):
+        raise HTTPException(status_code=409, detail="inventory_number already exists")
+    # Check for duplicate serial_number
+    if db.scalar(select(Pipette.id).where(Pipette.serial_number == payload.serial_number)):
+        raise HTTPException(status_code=409, detail="serial_number already exists")
+
     pipette = Pipette(
         register_number=_next_register_number(db),
         inventory_number=payload.inventory_number,
