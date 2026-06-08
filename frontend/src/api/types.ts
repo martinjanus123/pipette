@@ -42,3 +42,10 @@ export interface PipetteCreatePayload {
   application_id: number;
   room_id: number;
 }
+
+export interface PipettePaginatedResponse {
+  items: PipetteListItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
