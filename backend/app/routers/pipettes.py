@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Annotated, Any, List
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
@@ -10,13 +10,6 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.database import get_db
 from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage
 from app.schemas.pipette import PipetteCreate, PipetteDetail, PipetteListItem
-from pydantic import BaseModel, Field
-
-class BulkRoomMoveRequest(BaseModel):
-    pipette_ids: List[int] = Field(..., min_items=1)
-    target_room_id: int
-    notes: str | None = None
-    created_by: str = Field(..., min_length=1)
 
 router = APIRouter(prefix="/pipettes")
 DbSession = Annotated[Session, Depends(get_db)]
@@ -29,9 +22,11 @@ def _description(manufacturer: str, model_name: str, nominal_volume_ul: float) -
     volume = int(nominal_volume_ul) if nominal_volume_ul.is_integer() else nominal_volume_ul
     return f"{manufacturer} {model_name} {volume} µL"
 
+
 def _next_register_number(db: Session) -> int:
     current_max = db.scalar(select(func.max(Pipette.register_number)))
     return (current_max or 0) + 1
+
 
 def _as_list_item(pipette: Pipette) -> PipetteListItem:
     return PipetteListItem(
@@ -52,13 +47,16 @@ def _as_list_item(pipette: Pipette) -> PipetteListItem:
         pipette_type=pipette.pipette_type.name,
     )
 
+
 def _ensure_reference_exists(db: Session, model: type[Any], item_id: int, label: str) -> None:
     exists = db.scalar(select(model.id).where(model.id == item_id))
     if exists is None:
         raise HTTPException(status_code=422, detail=f"Unknown {label}: {item_id}")
 
+
 def _raise_pipette_not_found() -> None:
     raise StarletteHTTPException(status_code=404, detail="Pipette not found")
+
 
 @router.get("")
 def list_pipettes(
@@ -92,6 +90,7 @@ def list_pipettes(
         )
 
     return [_as_list_item(pipette) for pipette in db.scalars(statement).all()]
+
 
 @router.post(
     "",
@@ -149,6 +148,7 @@ def create_pipette(payload: PipetteCreate, db: DbSession) -> PipetteDetail:
     db.refresh(pipette)
     return get_pipette(pipette.id, db)
 
+
 @router.get(
     "/{pipette_id}",
     responses={
@@ -172,42 +172,3 @@ def get_pipette(pipette_id: int, db: DbSession) -> PipetteDetail:
     if pipette is None:
         _raise_pipette_not_found()
     return _as_list_item(pipette)
-
-@router.post(
-    "/bulk-room-move",
-    responses={
-        422: {"description": "Unknown reference data or pipette"},
-        400: {"description": "Bad request"},
-    },
-)
-def bulk_room_move(request: BulkRoomMoveRequest, db: DbSession):
-    # Validate target room exists
-    _ensure_reference_exists(db, Room, request.target_room_id, "target_room_id")
-
-    # Load pipettes with their current rooms
-    stmt = select(Pipette).where(Pipette.id.in_(request.pipette_ids)).options(joinedload(Pipette.room))
-    pipettes = db.scalars(stmt).all()
-    if len(pipettes) != len(request.pipette_ids):
-        # Find missing ids for clearer error (optional)
-        found_ids = {p.id for p in pipettes}
-        missing = [pid for pid in request.pipette_ids if pid not in found_ids]
-        raise HTTPException(status_code=422, detail=f"Unknown pipette IDs: {missing}")
-
-    target_room = db.get(Room, request.target_room_id)
-    now = datetime.now(timezone.utc)
-    for pipette in pipettes:
-        old_room_name = pipette.room.name if pipette.room else None
-        pipette.room_id = request.target_room_id
-        db.add(
-            PipetteEvent(
-                pipette_id=pipette.id,
-                event_type="moved",
-                event_date=now,
-                old_value=old_room_name,
-                new_value=target_room.name,
-                notes=request.notes,
-                created_by=request.created_by,
-            )
-        )
-    db.commit()
-    return {"moved_ids": request.pipette_ids}
