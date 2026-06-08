@@ -42,11 +42,3 @@ export interface PipetteCreatePayload {
   application_id: number;
   room_id: number;
 }
-
-// New interface for paginated pipette list response
-export interface PaginatedPipetteResponse {
-  items: PipetteListItem[];
-  total: number;
-  limit: number;
-  offset: number;
-}
