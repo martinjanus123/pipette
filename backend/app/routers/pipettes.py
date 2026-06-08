@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Annotated, Any, List, Dict
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_db
-from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage, Calibration
+from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage
 from app.schemas.pipette import PipetteCreate, PipetteDetail, PipetteListItem
 
 router = APIRouter(prefix="/pipettes")
@@ -17,13 +17,16 @@ SearchQuery = Annotated[str | None, Query()]
 LimitQuery = Annotated[int, Query(ge=1, le=200)]
 OffsetQuery = Annotated[int, Query(ge=0)]
 
+
 def _description(manufacturer: str, model_name: str, nominal_volume_ul: float) -> str:
     volume = int(nominal_volume_ul) if nominal_volume_ul.is_integer() else nominal_volume_ul
-    return f"{manufacturer} {model_name} {volume} \u00b5L"
+    return f"{manufacturer} {model_name} {volume} µL"
+
 
 def _next_register_number(db: Session) -> int:
     current_max = db.scalar(select(func.max(Pipette.register_number)))
     return (current_max or 0) + 1
+
 
 def _as_list_item(pipette: Pipette) -> PipetteListItem:
     return PipetteListItem(
@@ -44,13 +47,16 @@ def _as_list_item(pipette: Pipette) -> PipetteListItem:
         pipette_type=pipette.pipette_type.name,
     )
 
+
 def _ensure_reference_exists(db: Session, model: type[Any], item_id: int, label: str) -> None:
     exists = db.scalar(select(model.id).where(model.id == item_id))
     if exists is None:
         raise HTTPException(status_code=422, detail=f"Unknown {label}: {item_id}")
 
+
 def _raise_pipette_not_found() -> None:
     raise StarletteHTTPException(status_code=404, detail="Pipette not found")
+
 
 @router.get("")
 def list_pipettes(
@@ -84,6 +90,7 @@ def list_pipettes(
         )
 
     return [_as_list_item(pipette) for pipette in db.scalars(statement).all()]
+
 
 @router.post(
     "",
@@ -141,6 +148,7 @@ def create_pipette(payload: PipetteCreate, db: DbSession) -> PipetteDetail:
     db.refresh(pipette)
     return get_pipette(pipette.id, db)
 
+
 @router.get(
     "/{pipette_id}",
     responses={
@@ -164,69 +172,3 @@ def get_pipette(pipette_id: int, db: DbSession) -> PipetteDetail:
     if pipette is None:
         _raise_pipette_not_found()
     return _as_list_item(pipette)
-
-# ---------------------------------------------------------------------------
-# Timeline endpoint
-# ---------------------------------------------------------------------------
-
-@router.get(
-    "/{pipette_id}/timeline",
-    responses={
-        404: {"description": "Pipette not found"},
-    },
-)
-def get_timeline(pipette_id: int, db: DbSession) -> List[Dict[str, Any]]:
-    """Return a combined, descending‑sorted timeline for a pipette.
-+
-+    Each entry contains:
-+        - type: "event" or "calibration"
-+        - date: ISO‑8601 string (including time for events)
-+        - title: a short title
-+        - detail: free‑form text
-+        - source: identifier of the originating table
-+    """
-    pipette = db.scalar(select(Pipette).where(Pipette.id == pipette_id))
-    if pipette is None:
-        _raise_pipette_not_found()
-
-    events = pipette.events
-    calibrations = pipette.calibrations
-
-    timeline: List[Dict[str, Any]] = []
-
-    for ev in events:
-        timeline.append(
-            {
-                "type": "event",
-                "date": ev.event_date.isoformat(),
-                "title": ev.event_type,
-                "detail": ev.notes or "",
-                "source": "pipette_event",
-                "_sort": ev.event_date,
-            }
-        )
-
-    for cal in calibrations:
-        # make calibration date timezone‑aware to allow sorting with event dates
-        cal_dt = datetime.combine(cal.calibration_date, datetime.min.time()).replace(tzinfo=timezone.utc)
-        detail_parts: List[str] = []
-        if cal.certificate_reference:
-            detail_parts.append(f"Zertifikat {cal.certificate_reference}")
-        if cal.notes:
-            detail_parts.append(cal.notes)
-        detail = " ".join(detail_parts) if detail_parts else ""
-        timeline.append(
-            {
-                "type": "calibration",
-                "date": cal.calibration_date.isoformat(),
-                "title": "Kalibrierung",
-                "detail": detail,
-                "source": "calibration",
-                "_sort": cal_dt,
-            }
-        )
-
-    timeline.sort(key=lambda x: x["_sort"], reverse=True)
-    for entry in timeline:
-        entry.pop("_sort", None)
-    return timeline
