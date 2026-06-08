@@ -22,6 +22,7 @@ def _description(manufacturer: str, model_name: str, nominal_volume_ul: float) -
     volume = int(nominal_volume_ul) if nominal_volume_ul.is_integer() else nominal_volume_ul
     return f"{manufacturer} {model_name} {volume} µL"
 
+
 def _next_register_number(db: Session) -> int:
     current_max = db.scalar(select(func.max(Pipette.register_number)))
     return (current_max or 0) + 1
@@ -63,8 +64,6 @@ def list_pipettes(
     q: SearchQuery = None,
     limit: LimitQuery = 50,
     offset: OffsetQuery = 0,
-    room_id: int | None = None,
-    application_id: int | None = None,
 ) -> list[PipetteListItem]:
     statement = (
         select(Pipette)
@@ -78,7 +77,6 @@ def list_pipettes(
         .limit(limit)
         .offset(offset)
     )
-
     if q:
         like = f"%{q}%"
         statement = statement.where(
@@ -90,12 +88,6 @@ def list_pipettes(
                 Pipette.model_name.ilike(like),
             )
         )
-
-    if room_id is not None:
-        statement = statement.where(Pipette.room_id == room_id)
-
-    if application_id is not None:
-        statement = statement.where(Pipette.application_id == application_id)
 
     return [_as_list_item(pipette) for pipette in db.scalars(statement).all()]
 
