@@ -27,8 +27,6 @@ export interface PipetteListItem {
   use: string;
   application: string;
   pipette_type: string;
-  // New flag indicating if a Sartorius hint should be shown (volume <= 25 µL)
-  requires_sartorius: boolean;
 }
 
 export interface PipetteCreatePayload {

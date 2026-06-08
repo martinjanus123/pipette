@@ -33,8 +33,6 @@ class PipetteListItem(BaseModel):
     use: str
     application: str
     pipette_type: str
-    # New field indicating if the pipette requires a Sartorius hint (volume <= 25 µL)
-    requires_sartorius: bool
 
 
 class PipetteDetail(PipetteListItem):
