@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Annotated, Any, List
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
@@ -8,9 +8,8 @@ from sqlalchemy.orm import Session, joinedload
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_db
-from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage, Calibration
+from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage
 from app.schemas.pipette import PipetteCreate, PipetteDetail, PipetteListItem
-from app.schemas.calibration import CalibrationCreate, CalibrationRead
 
 router = APIRouter(prefix="/pipettes")
 DbSession = Annotated[Session, Depends(get_db)]
@@ -47,31 +46,6 @@ def _as_list_item(pipette: Pipette) -> PipetteListItem:
         application=pipette.application.name,
         pipette_type=pipette.pipette_type.name,
     )
-
-
-def _as_detail(pipette: Pipette) -> PipetteDetail:
-    # Build base list item
-    base = _as_list_item(pipette)
-    # Load calibrations sorted descending by calibration_date
-    cal_list: List[CalibrationRead] = []
-    if pipette.calibrations:
-        sorted_cals = sorted(pipette.calibrations, key=lambda c: c.calibration_date, reverse=True)
-        cal_list = [
-            CalibrationRead(
-                id=c.id,
-                calibration_date=c.calibration_date,
-                next_due_date=c.next_due_date,
-                result=c.result,
-                performed_by=c.performed_by,
-                certificate_reference=c.certificate_reference,
-                notes=c.notes,
-            )
-            for c in sorted_cals
-        ]
-    # Create PipetteDetail by merging dicts
-    detail_dict = base.dict()
-    detail_dict["calibrations"] = [c.dict() for c in cal_list]
-    return PipetteDetail(**detail_dict)
 
 
 def _ensure_reference_exists(db: Session, model: type[Any], item_id: int, label: str) -> None:
@@ -193,44 +167,8 @@ def get_pipette(pipette_id: int, db: DbSession) -> PipetteDetail:
             joinedload(Pipette.usage),
             joinedload(Pipette.application),
             joinedload(Pipette.pipette_type),
-            joinedload(Pipette.calibrations),
         )
     )
     if pipette is None:
         _raise_pipette_not_found()
-    return _as_detail(pipette)
-
-
-@router.post(
-    "/{pipette_id}/calibrations",
-    status_code=201,
-    responses={
-        404: {"description": "Pipette not found"},
-        422: {"description": "Invalid payload"},
-    },
-)
-def create_calibration(pipette_id: int, payload: CalibrationCreate, db: DbSession) -> CalibrationRead:
-    pipette = db.scalar(select(Pipette).where(Pipette.id == pipette_id))
-    if pipette is None:
-        _raise_pipette_not_found()
-    calibration = Calibration(
-        pipette_id=pipette_id,
-        calibration_date=payload.calibration_date,
-        next_due_date=payload.next_due_date,
-        result=payload.result,
-        performed_by=payload.performed_by,
-        certificate_reference=payload.certificate_reference,
-        notes=payload.notes,
-    )
-    db.add(calibration)
-    db.commit()
-    db.refresh(calibration)
-    return CalibrationRead(
-        id=calibration.id,
-        calibration_date=calibration.calibration_date,
-        next_due_date=calibration.next_due_date,
-        result=calibration.result,
-        performed_by=calibration.performed_by,
-        certificate_reference=calibration.certificate_reference,
-        notes=calibration.notes,
-    )
+    return _as_list_item(pipette)
