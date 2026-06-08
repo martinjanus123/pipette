@@ -10,6 +10,7 @@ export function PipetteListPage(): JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Load pipettes whenever the search query changes
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
@@ -36,6 +37,11 @@ export function PipetteListPage(): JSX.Element {
     };
   }, [query]);
 
+  // Helper to reset search field and trigger a reload without a query
+  const handleReset = () => {
+    setQuery("");
+  };
+
   return (
     <section className="page">
       <p className="eyebrow">Uebersicht</p>
@@ -47,9 +53,19 @@ export function PipetteListPage(): JSX.Element {
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Seriennummer, Inventar-Nr. oder Bezeichnung"
         />
+        {/* Show reset button only when a query is active */}
+        {query && (
+          <button type="button" onClick={handleReset} className="reset-button">
+            Zurücksetzen
+          </button>
+        )}
       </label>
       {isLoading && <p>Pipetten werden geladen.</p>}
       {error && <p className="error">{error}</p>}
+      {/* Show result count when we have data */}
+      {!isLoading && !error && pipettes.length > 0 && (
+        <p>{pipettes.length} {pipettes.length === 1 ? "Ergebnis" : "Ergebnisse"}</p>
+      )}
       {!isLoading && !error && pipettes.length === 0 && <p>Keine Pipetten vorhanden.</p>}
       {pipettes.length > 0 && (
         <table>
