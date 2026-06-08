@@ -10,36 +10,6 @@ export function PipetteListPage(): JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // sorting state
-  const [sortKey, setSortKey] = useState<keyof PipetteListItem | null>(null);
-  const [ascending, setAscending] = useState(true);
-
-  const handleHeaderClick = (key: keyof PipetteListItem) => {
-    if (sortKey === key) {
-      setAscending(!ascending);
-    } else {
-      setSortKey(key);
-      setAscending(true);
-    }
-  };
-
-  // sort helper – returns a new sorted array without mutating original state
-  const getSortedPipettes = (): PipetteListItem[] => {
-    if (!sortKey) return pipettes;
-    const sorted = [...pipettes].sort((a, b) => {
-      const aVal = a[sortKey];
-      const bVal = b[sortKey];
-      // Numbers are compared arithmetically, everything else lexicographically
-      if (typeof aVal === "number" && typeof bVal === "number") {
-        return aVal - bVal;
-      }
-      const aStr = aVal?.toString().toLowerCase() ?? "";
-      const bStr = bVal?.toString().toLowerCase() ?? "";
-      return aStr.localeCompare(bStr);
-    });
-    return ascending ? sorted : sorted.reverse();
-  };
-
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
@@ -66,14 +36,6 @@ export function PipetteListPage(): JSX.Element {
     };
   }, [query]);
 
-  const displayedPipettes = getSortedPipettes();
-
-  // helper to render ARIA sort attribute for button headers
-  const ariaSort = (key: keyof PipetteListItem) => {
-    if (sortKey !== key) return undefined;
-    return ascending ? "ascending" : "descending";
-  };
-
   return (
     <section className="page">
       <p className="eyebrow">Uebersicht</p>
@@ -88,72 +50,21 @@ export function PipetteListPage(): JSX.Element {
       </label>
       {isLoading && <p>Pipetten werden geladen.</p>}
       {error && <p className="error">{error}</p>}
-      {!isLoading && !error && displayedPipettes.length === 0 && (
-        <p>Keine Pipetten vorhanden.</p>
-      )}
-      {displayedPipettes.length > 0 && (
+      {!isLoading && !error && pipettes.length === 0 && <p>Keine Pipetten vorhanden.</p>}
+      {pipettes.length > 0 && (
         <table>
           <thead>
             <tr>
-              <th>
-                <button
-                  type="button"
-                  onClick={() => handleHeaderClick("register_number")}
-                  aria-sort={ariaSort("register_number")}
-                >
-                  Reg.-Nr.
-                </button>
-              </th>
-              <th>
-                <button
-                  type="button"
-                  onClick={() => handleHeaderClick("inventory_number")}
-                  aria-sort={ariaSort("inventory_number")}
-                >
-                  Inventar-Nr.
-                </button>
-              </th>
+              <th>Reg.-Nr.</th>
+              <th>Inventar-Nr.</th>
               <th>Serien-Nr.</th>
-              <th>
-                <button
-                  type="button"
-                  onClick={() => handleHeaderClick("description")}
-                  aria-sort={ariaSort("description")}
-                >
-                  Bezeichnung
-                </button>
-              </th>
-              <th>
-                <button
-                  type="button"
-                  onClick={() => handleHeaderClick("room")}
-                  aria-sort={ariaSort("room")}
-                >
-                  Raum
-                </button>
-              </th>
-              <th>
-                <button
-                  type="button"
-                  onClick={() => handleHeaderClick("application")}
-                  aria-sort={ariaSort("application")}
-                >
-                  Anwendung
-                </button>
-              </th>
-              <th>
-                <button
-                  type="button"
-                  onClick={() => handleHeaderClick("status")}
-                  aria-sort={ariaSort("status")}
-                >
-                  Status
-                </button>
-              </th>
+              <th>Bezeichnung</th>
+              <th>Raum</th>
+              <th>Anwendung</th>
             </tr>
           </thead>
           <tbody>
-            {displayedPipettes.map((pipette) => (
+            {pipettes.map((pipette) => (
               <tr key={pipette.id}>
                 <td>{pipette.register_number}</td>
                 <td>{pipette.inventory_number}</td>
@@ -163,7 +74,6 @@ export function PipetteListPage(): JSX.Element {
                 </td>
                 <td>{pipette.room}</td>
                 <td>{pipette.application}</td>
-                <td>{pipette.status}</td>
               </tr>
             ))}
           </tbody>
