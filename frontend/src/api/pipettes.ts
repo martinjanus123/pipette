@@ -1,27 +1,8 @@
 import { apiRequest } from "./client";
-import type { PipetteCreatePayload, PipetteListItem, PipettePaginatedResponse } from "./types";
+import type { PipetteCreatePayload, PipetteListItem } from "./types";
 
-export interface PipetteQueryOptions {
-  q?: string;
-  room_id?: number;
-  application_id?: number;
-  use_id?: number;
-  pipette_type_id?: number;
-  status?: string;
-  limit?: number;
-  offset?: number;
-}
-
-export async function getPipettes(options?: PipetteQueryOptions): Promise<PipettePaginatedResponse> {
-  const params: Record<string, any> = {};
-  if (options) {
-    Object.entries(options).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
-        params[key] = value;
-      }
-    });
-  }
-  return apiRequest<PipettePaginatedResponse>("/api/pipettes", undefined, params);
+export async function getPipettes(query?: string): Promise<PipetteListItem[]> {
+  return apiRequest<PipetteListItem[]>("/api/pipettes", undefined, { q: query });
 }
 
 export async function getPipette(id: string): Promise<PipetteListItem> {
