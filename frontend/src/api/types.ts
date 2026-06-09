@@ -29,6 +29,20 @@ export interface PipetteListItem {
   pipette_type: string;
 }
 
+export interface PipetteEventItem {
+  id: number;
+  event_type: string;
+  event_date: string; // ISO string
+  old_value?: string;
+  new_value?: string;
+  notes?: string;
+  created_by?: string;
+}
+
+export interface PipetteDetail extends PipetteListItem {
+  events: PipetteEventItem[];
+}
+
 export interface PipetteCreatePayload {
   manufacturer: string;
   model_name: string;
@@ -41,4 +55,10 @@ export interface PipetteCreatePayload {
   calibration_interval_months: 6 | 12;
   application_id: number;
   room_id: number;
+}
+
+export interface PipetteStatusUpdate {
+  status: "active" | "maintenance" | "retired";
+  notes?: string;
+  created_by?: string;
 }
