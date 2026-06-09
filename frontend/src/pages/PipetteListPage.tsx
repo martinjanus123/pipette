@@ -10,6 +10,10 @@ export function PipetteListPage(): JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // sorting state: key and direction
+  const [sortKey, setSortKey] = useState<keyof PipetteListItem | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
@@ -36,6 +40,52 @@ export function PipetteListPage(): JSX.Element {
     };
   }, [query]);
 
+  // handle sorting when user clicks a header
+  const handleSort = (key: keyof PipetteListItem) => {
+    if (sortKey === key) {
+      // toggle direction
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDirection("asc");
+    }
+  };
+
+  // compute sorted list (do not mutate original state)
+  const sortedPipettes = (() => {
+    if (!sortKey) return pipettes;
+    const sorted = [...pipettes];
+    sorted.sort((a, b) => {
+      const aVal = a[sortKey];
+      const bVal = b[sortKey];
+      // numeric comparison for register_number, otherwise string comparison
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        return aVal - bVal;
+      }
+      return String(aVal).localeCompare(String(bVal));
+    });
+    return sortDirection === "asc" ? sorted : sorted.reverse();
+  })();
+
+  // Helper to render header with button and aria-sort attribute
+  const renderHeader = (label: string, key: keyof PipetteListItem) => (
+    <th>
+      <button
+        type="button"
+        onClick={() => handleSort(key)}
+        aria-sort={sortKey === key ? (sortDirection === "asc" ? "ascending" : "descending") : undefined}
+        style={{ all: "unset", cursor: "pointer" }}
+      >
+        {label}
+        {sortKey === key && (
+          <span aria-hidden="true" style={{ marginLeft: "4px" }}>
+            {sortDirection === "asc" ? "▲" : "▼"}
+          </span>
+        )}
+      </button>
+    </th>
+  );
+
   return (
     <section className="page">
       <p className="eyebrow">Uebersicht</p>
@@ -55,16 +105,17 @@ export function PipetteListPage(): JSX.Element {
         <table>
           <thead>
             <tr>
-              <th>Reg.-Nr.</th>
-              <th>Inventar-Nr.</th>
+              {renderHeader("Reg.-Nr.", "register_number")}
+              {renderHeader("Inventar-Nr.", "inventory_number")}
               <th>Serien-Nr.</th>
               <th>Bezeichnung</th>
-              <th>Raum</th>
-              <th>Anwendung</th>
+              {renderHeader("Raum", "room")}
+              {renderHeader("Anwendung", "application")}
+              {renderHeader("Status", "status")}
             </tr>
           </thead>
           <tbody>
-            {pipettes.map((pipette) => (
+            {sortedPipettes.map((pipette) => (
               <tr key={pipette.id}>
                 <td>{pipette.register_number}</td>
                 <td>{pipette.inventory_number}</td>
@@ -74,6 +125,7 @@ export function PipetteListPage(): JSX.Element {
                 </td>
                 <td>{pipette.room}</td>
                 <td>{pipette.application}</td>
+                <td>{pipette.status}</td>
               </tr>
             ))}
           </tbody>
