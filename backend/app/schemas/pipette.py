@@ -1,6 +1,7 @@
 from typing import Literal
 
 from pydantic import BaseModel, Field
+from datetime import datetime
 
 
 class PipetteCreate(BaseModel):
@@ -37,3 +38,13 @@ class PipetteListItem(BaseModel):
 
 class PipetteDetail(PipetteListItem):
     pass
+
+
+class TimelineEntry(BaseModel):
+    """Unified timeline entry for a pipette, combines events and calibrations."""
+
+    type: Literal["event", "calibration"]
+    date: datetime
+    title: str
+    detail: str
+    source: str
