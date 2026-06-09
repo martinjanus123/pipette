@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -38,3 +38,22 @@ class Pipette(TimestampMixin, Base):
         if not self.calibrations:
             return None
         return max(calibration.calibration_date for calibration in self.calibrations)
+
+    @property
+    def calibration_status(self) -> str:
+        """Calculate calibration status based on latest calibration's next_due_date.
+
+        Returns one of: 'gray' (no calibrations), 'red' (overdue),
+        'yellow' (due within 30 days), 'green' (up to date).
+        """
+        if not self.calibrations:
+            return "gray"
+        # Determine the latest calibration by calibration_date
+        latest = max(self.calibrations, key=lambda c: c.calibration_date)
+        today = datetime.utcnow().date()
+        due_date = latest.next_due_date
+        if due_date < today:
+            return "red"
+        if (due_date - today).days <= 30:
+            return "yellow"
+        return "green"

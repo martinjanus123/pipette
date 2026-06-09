@@ -20,7 +20,7 @@ OffsetQuery = Annotated[int, Query(ge=0)]
 
 def _description(manufacturer: str, model_name: str, nominal_volume_ul: float) -> str:
     volume = int(nominal_volume_ul) if nominal_volume_ul.is_integer() else nominal_volume_ul
-    return f"{manufacturer} {model_name} {volume} µL"
+    return f"{manufacturer} {model_name} {volume} \u00b5L"
 
 
 def _next_register_number(db: Session) -> int:
@@ -45,6 +45,7 @@ def _as_list_item(pipette: Pipette) -> PipetteListItem:
         use=pipette.usage.name,
         application=pipette.application.name,
         pipette_type=pipette.pipette_type.name,
+        calibration_status=pipette.calibration_status,
     )
 
 
@@ -72,6 +73,7 @@ def list_pipettes(
             joinedload(Pipette.usage),
             joinedload(Pipette.application),
             joinedload(Pipette.pipette_type),
+            joinedload(Pipette.calibrations),
         )
         .order_by(Pipette.register_number)
         .limit(limit)
@@ -89,7 +91,8 @@ def list_pipettes(
             )
         )
 
-    return [_as_list_item(pipette) for pipette in db.scalars(statement).all()]
+    pipettes = db.scalars(statement).unique().all()
+    return [_as_list_item(pipette) for pipette in pipettes]
 
 
 @router.post(
@@ -167,6 +170,7 @@ def get_pipette(pipette_id: int, db: DbSession) -> PipetteDetail:
             joinedload(Pipette.usage),
             joinedload(Pipette.application),
             joinedload(Pipette.pipette_type),
+            joinedload(Pipette.calibrations),
         )
     )
     if pipette is None:
