@@ -1,4 +1,4 @@
-from typing import Literal, List
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -37,10 +37,3 @@ class PipetteListItem(BaseModel):
 
 class PipetteDetail(PipetteListItem):
     pass
-
-
-class PipettePaginatedResponse(BaseModel):
-    items: List[PipetteListItem]
-    total: int
-    limit: int
-    offset: int

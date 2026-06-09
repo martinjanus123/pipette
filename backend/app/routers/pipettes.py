@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Annotated, Any, List, Optional
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
@@ -9,25 +9,13 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_db
 from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage
-from app.schemas.pipette import (
-    PipetteCreate,
-    PipetteDetail,
-    PipetteListItem,
-    PipettePaginatedResponse,
-)
+from app.schemas.pipette import PipetteCreate, PipetteDetail, PipetteListItem
 
 router = APIRouter(prefix="/pipettes")
 DbSession = Annotated[Session, Depends(get_db)]
-SearchQuery = Annotated[Optional[str], Query()]
+SearchQuery = Annotated[str | None, Query()]
 LimitQuery = Annotated[int, Query(ge=1, le=200)]
 OffsetQuery = Annotated[int, Query(ge=0)]
-
-# Optional filter query params (no alias needed as variable names match query param names)
-RoomIdQuery = Annotated[Optional[int], Query()]
-ApplicationIdQuery = Annotated[Optional[int], Query()]
-UseIdQuery = Annotated[Optional[int], Query()]
-PipetteTypeIdQuery = Annotated[Optional[int], Query()]
-StatusQuery = Annotated[Optional[str], Query()]
 
 
 def _description(manufacturer: str, model_name: str, nominal_volume_ul: float) -> str:
@@ -76,14 +64,8 @@ def list_pipettes(
     q: SearchQuery = None,
     limit: LimitQuery = 50,
     offset: OffsetQuery = 0,
-    room_id: RoomIdQuery = None,
-    application_id: ApplicationIdQuery = None,
-    use_id: UseIdQuery = None,
-    pipette_type_id: PipetteTypeIdQuery = None,
-    status: StatusQuery = None,
-) -> PipettePaginatedResponse:
-    # Base statement with eager loads
-    base_stmt = (
+) -> list[PipetteListItem]:
+    statement = (
         select(Pipette)
         .options(
             joinedload(Pipette.room),
@@ -92,11 +74,12 @@ def list_pipettes(
             joinedload(Pipette.pipette_type),
         )
         .order_by(Pipette.register_number)
+        .limit(limit)
+        .offset(offset)
     )
-    # Apply filters
     if q:
         like = f"%{q}%"
-        base_stmt = base_stmt.where(
+        statement = statement.where(
             or_(
                 Pipette.inventory_number.ilike(like),
                 Pipette.serial_number.ilike(like),
@@ -105,26 +88,8 @@ def list_pipettes(
                 Pipette.model_name.ilike(like),
             )
         )
-    if room_id is not None:
-        base_stmt = base_stmt.where(Pipette.room_id == room_id)
-    if application_id is not None:
-        base_stmt = base_stmt.where(Pipette.application_id == application_id)
-    if use_id is not None:
-        base_stmt = base_stmt.where(Pipette.use_id == use_id)
-    if pipette_type_id is not None:
-        base_stmt = base_stmt.where(Pipette.pipette_type_id == pipette_type_id)
-    if status is not None:
-        base_stmt = base_stmt.where(Pipette.status == status)
 
-    # Total count before pagination – use distinct primary key to avoid duplicates from joins
-    count_stmt = select(func.count(Pipette.id)).select_from(base_stmt.subquery())
-    total = db.scalar(count_stmt) or 0
-
-    # Apply pagination
-    paged_stmt = base_stmt.limit(limit).offset(offset)
-    items = [_as_list_item(p) for p in db.scalars(paged_stmt).all()]
-
-    return PipettePaginatedResponse(items=items, total=total, limit=limit, offset=offset)
+    return [_as_list_item(pipette) for pipette in db.scalars(statement).all()]
 
 
 @router.post(
