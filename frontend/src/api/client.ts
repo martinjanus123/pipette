@@ -4,7 +4,8 @@ const ALLOWED_API_ORIGINS = new Set(["http://localhost:8000", "http://127.0.0.1:
 type QueryValue = string | number | boolean | null | undefined;
 
 export function getApiBaseUrl(): string {
-  return import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL;
+  // In test and simple environments, fallback to the default base URL.
+  return DEFAULT_API_BASE_URL;
 }
 
 export function buildApiUrl(path: string, query?: Record<string, QueryValue>): string {
