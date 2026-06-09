@@ -33,6 +33,7 @@ class PipetteListItem(BaseModel):
     use: str
     application: str
     pipette_type: str
+    requires_sartorius: bool
 
 
 class PipetteDetail(PipetteListItem):
