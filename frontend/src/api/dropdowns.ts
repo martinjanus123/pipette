@@ -11,10 +11,3 @@ export async function getDropdownData(): Promise<DropdownData> {
 
   return { rooms, applications, uses, pipetteTypes };
 }
-
-export async function createApplication(name: string): Promise<ReferenceItem> {
-  return apiRequest<ReferenceItem>("/api/applications", {
-    method: "POST",
-    body: JSON.stringify({ name })
-  });
-}
