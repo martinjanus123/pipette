@@ -1,6 +1,25 @@
-from typing import Literal
+from typing import Literal, List
 
 from pydantic import BaseModel, Field
+
+
+class CalibrationCreate(BaseModel):
+    calibration_date: str = Field(..., description="Date of the calibration in ISO format")
+    next_due_date: str = Field(..., description="Next due date in ISO format")
+    result: str | None = Field(None, max_length=80)
+    performed_by: str | None = Field(None, max_length=120)
+    certificate_reference: str | None = Field(None, max_length=160)
+    notes: str | None = Field(None)
+
+
+class CalibrationRead(BaseModel):
+    id: int
+    calibration_date: str
+    next_due_date: str
+    result: str | None = None
+    performed_by: str | None = None
+    certificate_reference: str | None = None
+    notes: str | None = None
 
 
 class PipetteCreate(BaseModel):
@@ -36,4 +55,4 @@ class PipetteListItem(BaseModel):
 
 
 class PipetteDetail(PipetteListItem):
-    pass
+    calibrations: List[CalibrationRead] = []
