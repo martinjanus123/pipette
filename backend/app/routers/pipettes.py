@@ -1,5 +1,5 @@
-from datetime import datetime, timezone, date, time
-from typing import Annotated, Any, List
+from datetime import datetime, timezone
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session, joinedload
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_db
-from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage, Calibration
-from app.schemas.pipette import PipetteCreate, PipetteDetail, PipetteListItem, TimelineEntry
+from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage
+from app.schemas.pipette import PipetteCreate, PipetteDetail, PipetteListItem
 
 router = APIRouter(prefix="/pipettes")
 DbSession = Annotated[Session, Depends(get_db)]
@@ -20,7 +20,7 @@ OffsetQuery = Annotated[int, Query(ge=0)]
 
 def _description(manufacturer: str, model_name: str, nominal_volume_ul: float) -> str:
     volume = int(nominal_volume_ul) if nominal_volume_ul.is_integer() else nominal_volume_ul
-    return f"{manufacturer} {model_name} {volume} \u00b5L"
+    return f"{manufacturer} {model_name} {volume} µL"
 
 
 def _next_register_number(db: Session) -> int:
@@ -172,58 +172,3 @@ def get_pipette(pipette_id: int, db: DbSession) -> PipetteDetail:
     if pipette is None:
         _raise_pipette_not_found()
     return _as_list_item(pipette)
-
-
-@router.get(
-    "/{pipette_id}/timeline",
-    responses={
-        404: {"description": "Pipette not found"},
-    },
-)
-def get_timeline(pipette_id: int, db: DbSession) -> List[TimelineEntry]:
-    # Verify pipette exists
-    exists = db.scalar(select(Pipette.id).where(Pipette.id == pipette_id))
-    if exists is None:
-        _raise_pipette_not_found()
-
-    # Load events and calibrations
-    events = db.scalars(select(PipetteEvent).where(PipetteEvent.pipette_id == pipette_id)).all()
-    calibrations = db.scalars(select(Calibration).where(Calibration.pipette_id == pipette_id)).all()
-
-    entries: List[TimelineEntry] = []
-
-    for ev in events:
-        if ev.event_type == "created":
-            continue
-        entries.append(
-            TimelineEntry(
-                type="event",
-                date=ev.event_date,
-                title=ev.event_type,
-                detail=ev.notes or "",
-                source="pipette_event",
-            )
-        )
-
-    for cal in calibrations:
-        cal_dt = datetime.combine(cal.calibration_date, time.min)
-        detail_parts = []
-        if cal.result:
-            detail_parts.append(f"Result: {cal.result}")
-        if cal.certificate_reference:
-            detail_parts.append(f"Certificate: {cal.certificate_reference}")
-        if cal.notes:
-            detail_parts.append(f"Notes: {cal.notes}")
-        detail = ". ".join(detail_parts)
-        entries.append(
-            TimelineEntry(
-                type="calibration",
-                date=cal_dt,
-                title="Calibration",
-                detail=detail,
-                source="calibration",
-            )
-        )
-
-    entries.sort(key=lambda e: e.date.timestamp() if hasattr(e.date, "timestamp") else e.date, reverse=True)
-    return entries
