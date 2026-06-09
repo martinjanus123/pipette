@@ -42,3 +42,14 @@ export interface PipetteCreatePayload {
   application_id: number;
   room_id: number;
 }
++
++export interface CalibrationImportError {
++  row: number;
++  field: string;
++  message: string;
++}
++
++export interface CalibrationImportResponse {
++  imported_count: number;
++  errors: CalibrationImportError[];
++}
