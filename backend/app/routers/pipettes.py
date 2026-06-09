@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Annotated, Any, List
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
@@ -9,13 +9,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_db
 from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage
-from app.schemas.pipette import (
-    PipetteCreate,
-    PipetteDetail,
-    PipetteListItem,
-    PipetteStatusUpdate,
-    PipetteEventItem,
-)
+from app.schemas.pipette import PipetteCreate, PipetteDetail, PipetteListItem
 
 router = APIRouter(prefix="/pipettes")
 DbSession = Annotated[Session, Depends(get_db)]
@@ -52,28 +46,6 @@ def _as_list_item(pipette: Pipette) -> PipetteListItem:
         application=pipette.application.name,
         pipette_type=pipette.pipette_type.name,
     )
-
-
-def _as_detail_item(pipette: Pipette) -> PipetteDetail:
-    base = _as_list_item(pipette)
-    # Map events sorted descending by event_date
-    events = sorted(pipette.events, key=lambda e: e.event_date, reverse=True)
-    event_items: List[PipetteEventItem] = [
-        PipetteEventItem(
-            id=ev.id,
-            event_type=ev.event_type,
-            event_date=ev.event_date,
-            old_value=ev.old_value,
-            new_value=ev.new_value,
-            notes=ev.notes,
-            created_by=ev.created_by,
-        )
-        for ev in events
-    ]
-    # PipetteDetail is a subclass of PipetteListItem, we can assign events attribute directly
-    detail = PipetteDetail(**base.dict())
-    detail.events = event_items
-    return detail
 
 
 def _ensure_reference_exists(db: Session, model: type[Any], item_id: int, label: str) -> None:
@@ -195,47 +167,8 @@ def get_pipette(pipette_id: int, db: DbSession) -> PipetteDetail:
             joinedload(Pipette.usage),
             joinedload(Pipette.application),
             joinedload(Pipette.pipette_type),
-            joinedload(Pipette.events),
         )
     )
     if pipette is None:
         _raise_pipette_not_found()
-    return _as_detail_item(pipette)
-
-
-@router.patch(
-    "/{pipette_id}/status",
-    responses={
-        404: {"description": "Pipette not found"},
-        422: {"description": "Invalid status value"},
-    },
-)
-def update_pipette_status(pipette_id: int, payload: PipetteStatusUpdate, db: DbSession) -> PipetteDetail:
-    pipette = db.scalar(
-        select(Pipette)
-        .where(Pipette.id == pipette_id)
-        .options(joinedload(Pipette.events))
-    )
-    if pipette is None:
-        _raise_pipette_not_found()
-
-    old_status = pipette.status
-    if old_status == payload.status:
-        # No change; just return current detail
-        return _as_detail_item(pipette)
-
-    pipette.status = payload.status
-    db.add(
-        PipetteEvent(
-            pipette_id=pipette.id,
-            event_type="status_changed",
-            event_date=datetime.now(timezone.utc),
-            old_value=old_status,
-            new_value=payload.status,
-            notes=payload.notes,
-            created_by=payload.created_by,
-        )
-    )
-    db.commit()
-    db.refresh(pipette)
-    return _as_detail_item(pipette)
+    return _as_list_item(pipette)
