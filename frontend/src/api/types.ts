@@ -27,7 +27,6 @@ export interface PipetteListItem {
   use: string;
   application: string;
   pipette_type: string;
-  requires_sartorius: boolean;
 }
 
 export interface PipetteCreatePayload {

@@ -45,7 +45,6 @@ def _as_list_item(pipette: Pipette) -> PipetteListItem:
         use=pipette.usage.name,
         application=pipette.application.name,
         pipette_type=pipette.pipette_type.name,
-        requires_sartorius=getattr(pipette, "requires_sartorius", False),
     )
 
 
