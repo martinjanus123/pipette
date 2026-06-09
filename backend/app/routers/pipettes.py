@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Annotated, Any, List
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
@@ -9,7 +9,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_db
 from app.models import Application, Pipette, PipetteEvent, PipetteType, Room, Usage
-from app.schemas.pipette import PipetteCreate, PipetteDetail, PipetteListItem, BulkRoomMoveRequest, BulkRoomMoveResponse
+from app.schemas.pipette import PipetteCreate, PipetteDetail, PipetteListItem
 
 router = APIRouter(prefix="/pipettes")
 DbSession = Annotated[Session, Depends(get_db)]
@@ -172,47 +172,3 @@ def get_pipette(pipette_id: int, db: DbSession) -> PipetteDetail:
     if pipette is None:
         _raise_pipette_not_found()
     return _as_list_item(pipette)
-
-
-@router.post(
-    "/bulk-room-move",
-    response_model=BulkRoomMoveResponse,
-    responses={
-        422: {"description": "Invalid input or unknown references"},
-        400: {"description": "Bad request"},
-    },
-)
-def bulk_room_move(payload: BulkRoomMoveRequest, db: DbSession) -> BulkRoomMoveResponse:
-    # Validate target room exists
-    _ensure_reference_exists(db, Room, payload.target_room_id, "target_room_id")
-
-    # Fetch pipettes
-    pipettes = list(db.scalars(select(Pipette).where(Pipette.id.in_(payload.pipette_ids))).all())
-    if len(pipettes) != len(payload.pipette_ids):
-        raise HTTPException(status_code=422, detail="One or more pipettes not found")
-
-    try:
-        # Use transaction
-        for pipette in pipettes:
-            old_room_id = pipette.room_id
-            # Update room
-            pipette.room_id = payload.target_room_id
-            # Record event
-            db.add(
-                PipetteEvent(
-                    pipette_id=pipette.id,
-                    event_type="moved",
-                    event_date=datetime.now(timezone.utc),
-                    old_value=str(old_room_id),
-                    new_value=str(payload.target_room_id),
-                    notes=payload.notes,
-                    created_by=payload.created_by,
-                )
-            )
-        db.commit()
-    except Exception as exc:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Bulk move failed") from exc
-
-    moved_ids = [p.id for p in pipettes]
-    return BulkRoomMoveResponse(moved_ids=moved_ids)
