@@ -61,7 +61,6 @@ export function PipetteListPage(): JSX.Element {
               <th>Bezeichnung</th>
               <th>Raum</th>
               <th>Anwendung</th>
-              <th>Sartorius</th>
             </tr>
           </thead>
           <tbody>
@@ -75,7 +74,6 @@ export function PipetteListPage(): JSX.Element {
                 </td>
                 <td>{pipette.room}</td>
                 <td>{pipette.application}</td>
-                <td>{pipette.requires_sartorius ? "Sartorius" : ""}</td>
               </tr>
             ))}
           </tbody>
