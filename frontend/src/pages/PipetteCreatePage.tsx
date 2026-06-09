@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { getDropdownData, createApplication } from "../api/dropdowns";
+import { getDropdownData } from "../api/dropdowns";
 import { createPipette } from "../api/pipettes";
 import type { DropdownData, PipetteCreatePayload } from "../api/types";
 
@@ -25,7 +25,6 @@ export function PipetteCreatePage(): JSX.Element {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [newAppName, setNewAppName] = useState("");
 
   useEffect(() => {
     getDropdownData()
@@ -46,26 +45,6 @@ export function PipetteCreatePage(): JSX.Element {
 
   function updateField(name: keyof typeof form, value: string): void {
     setForm((current) => ({ ...current, [name]: value }));
-  }
-
-  async function handleAddApplication(): Promise<void> {
-    if (!newAppName.trim()) {
-      setError("Name der Anwendung darf nicht leer sein.");
-      return;
-    }
-    try {
-      const created = await createApplication(newAppName.trim());
-      // Update dropdowns list
-      setDropdowns((prev) => {
-        if (!prev) return prev;
-        return { ...prev, applications: [...prev.applications, created] };
-      });
-      // Select the newly created application
-      setForm((current) => ({ ...current, application_id: String(created.id) }));
-      setNewAppName("");
-    } catch {
-      setError("Anwendung konnte nicht erstellt werden.");
-    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
@@ -190,18 +169,6 @@ export function PipetteCreatePage(): JSX.Element {
               ))}
             </select>
           </label>
-          {/* New Application input and button */}
-          <label className="field">
-            <span>Neue Anwendung</span>
-            <input
-              value={newAppName}
-              onChange={(e) => setNewAppName(e.target.value)}
-              placeholder="Name der neuen Anwendung"
-            />
-          </label>
-          <button type="button" onClick={handleAddApplication} className="field">
-            Anwendung anlegen
-          </button>
           <label className="field">
             <span>Anwendung</span>
             <select
